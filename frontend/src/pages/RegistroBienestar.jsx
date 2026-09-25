@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { 
   HeartPulse, Smile, Moon, Activity, 
-  FileText, CheckCircle2, X, Save, Loader2 
+  FileText, CheckCircle2, X, Save, Loader2, BookOpen 
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -10,6 +10,7 @@ export default function RegistroBienestar() {
     estadoAnimo: 'Bien',
     nivelEstres: '5',
     horasSueno: '',
+    horasEstudio: '', // <-- NUEVO ESTADO
     actividadFisica: 'Ninguna',
     notas: ''
   });
@@ -33,6 +34,7 @@ export default function RegistroBienestar() {
         estadoAnimo: formData.estadoAnimo,
         nivelEstres: parseInt(formData.nivelEstres),
         horasSueno: parseFloat(formData.horasSueno),
+        horasEstudio: parseFloat(formData.horasEstudio) || 0, // <-- NUEVO DATO EN PAYLOAD
         actividadFisica: formData.actividadFisica,
         notas: formData.notas
       };
@@ -48,6 +50,7 @@ export default function RegistroBienestar() {
         estadoAnimo: 'Bien',
         nivelEstres: '5',
         horasSueno: '',
+        horasEstudio: '', // <-- RESETEO DEL NUEVO CAMPO
         actividadFisica: 'Ninguna',
         notas: ''
       });
@@ -140,20 +143,36 @@ export default function RegistroBienestar() {
           </div>
         </div>
 
-        <div>
-          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-            <HeartPulse className="w-4 h-4 text-emerald-500" /> Actividad Física
-          </label>
-          <select 
-            value={formData.actividadFisica}
-            onChange={(e) => setFormData({...formData, actividadFisica: e.target.value})}
-            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none text-slate-700"
-          >
-            <option value="Ninguna">Ninguna</option>
-            <option value="Ligera">Ligera (Caminar, estiramientos)</option>
-            <option value="Moderada">Moderada (Trote, bicicleta, gimnasio suave)</option>
-            <option value="Intensa">Intensa (Correr, entrenamiento pesado, deportes)</option>
-          </select>
+        {/* Agrupamos Actividad Física y Horas de Estudio en 2 columnas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
+              <HeartPulse className="w-4 h-4 text-emerald-500" /> Actividad Física
+            </label>
+            <select 
+              value={formData.actividadFisica}
+              onChange={(e) => setFormData({...formData, actividadFisica: e.target.value})}
+              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none text-slate-700"
+            >
+              <option value="Ninguna">Ninguna</option>
+              <option value="Ligera">Ligera (Caminar, estiramientos)</option>
+              <option value="Moderada">Moderada (Trote, bicicleta, gimnasio suave)</option>
+              <option value="Intensa">Intensa (Correr, entrenamiento pesado, deportes)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
+              <BookOpen className="w-4 h-4 text-violet-500" /> Horas de Estudio {/* <-- NUEVO INPUT VISUAL */}
+            </label>
+            <input 
+              type="number" min="0" max="24" step="0.5" required
+              placeholder="Ej. 4.5"
+              value={formData.horasEstudio}
+              onChange={(e) => setFormData({...formData, horasEstudio: e.target.value})}
+              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none text-slate-700"
+            />
+          </div>
         </div>
 
         <div>
@@ -179,6 +198,7 @@ export default function RegistroBienestar() {
         </div>
       </form>
 
+      {/* Modal de Confirmación */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in-up">
@@ -204,6 +224,11 @@ export default function RegistroBienestar() {
               <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                 <span className="text-slate-500 text-sm font-medium">Horas de Sueño:</span>
                 <span className="font-bold text-slate-800">{formData.horasSueno} h</span>
+              </div>
+              {/* <-- NUEVA LÍNEA EN EL MODAL PARA HORAS DE ESTUDIO --> */}
+              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                <span className="text-slate-500 text-sm font-medium">Horas de Estudio:</span>
+                <span className="font-bold text-slate-800">{formData.horasEstudio} h</span>
               </div>
               <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                 <span className="text-slate-500 text-sm font-medium">Nivel de Estrés:</span>
