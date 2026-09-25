@@ -1,205 +1,249 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { bienestarService } from '../services/bienestarService';
-import { Heart, Moon, Brain, BookOpen, Activity, Save } from 'lucide-react';
+import { 
+  HeartPulse, Smile, Moon, Activity, 
+  FileText, CheckCircle2, X, Save, Loader2 
+} from 'lucide-react';
+import axios from 'axios';
 
 export default function RegistroBienestar() {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
-
   const [formData, setFormData] = useState({
-    horas_sueno: 7,
-    nivel_estres: 5,
-    nivel_animo: 5,
-    horas_estudio: 4,
-    actividad_fisica: 30,
-    actividad_fisica_tipo: '',
-    emociones: '',
+    estadoAnimo: 'Bien',
+    nivelEstres: '5',
+    horasSueno: '',
+    actividadFisica: 'Ninguna',
+    notas: ''
   });
 
-  const handleChange = (e) => {
-    const { name, value, type } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'number' ? Number(value) : value,
-    }));
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleReviewSubmit = (e) => {
+    e.preventDefault();
+    setShowConfirmModal(true);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMensaje({ tipo: '', texto: '' });
-
+  const handleFinalSubmit = async () => {
+    setIsSubmitting(true);
+    
     try {
-      // Mapeo adaptado al esquema de PostgreSQL/FastAPI
+      const token = localStorage.getItem('access_token');
+      
       const payload = {
-        horas_sueno: Number(formData.horas_sueno),
-        nivel_estres: Number(formData.nivel_estres),
-        nivel_animo: Number(formData.nivel_animo),
-        horas_estudio: Number(formData.horas_estudio),
-        // Convierte los minutos a Booleano para evitar DatatypeMismatch
-        actividad_fisica: Number(formData.actividad_fisica) > 0,
-        tipo_actividad: formData.actividad_fisica_tipo,
-        notas: formData.emociones,
+        estadoAnimo: formData.estadoAnimo,
+        nivelEstres: parseInt(formData.nivelEstres),
+        horasSueno: parseFloat(formData.horasSueno),
+        actividadFisica: formData.actividadFisica,
+        notas: formData.notas
       };
 
-      await bienestarService.registrarDia(payload);
-
-      setMensaje({ tipo: 'exito', texto: '¡Registro guardado correctamente!' });
-      setTimeout(() => navigate('/'), 1500);
-    } catch (err) {
-      setMensaje({
-        tipo: 'error',
-        texto: err.response?.data?.detail || 'Error al guardar el registro',
+      await axios.post('http://localhost:8000/bienestar/registro', payload, {
+        headers: { Authorization: `Bearer ${token}` }
       });
+
+      setShowConfirmModal(false);
+      setShowSuccess(true);
+      
+      setFormData({
+        estadoAnimo: 'Bien',
+        nivelEstres: '5',
+        horasSueno: '',
+        actividadFisica: 'Ninguna',
+        notas: ''
+      });
+
+      setTimeout(() => setShowSuccess(false), 3000);
+      
+    } catch (error) {
+      console.error("Error al guardar el registro:", error);
+      
+      // Capturamos el error real del backend para saber qué falla
+      const mensajeReal = error.response?.data?.detail || error.response?.data?.message || error.message;
+      alert(`Detalle del error: ${typeof mensajeReal === 'object' ? JSON.stringify(mensajeReal) : mensajeReal}`);
+      
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Nuevo Registro de Bienestar</h1>
-        <p className="text-slate-500 text-sm">Ingresa tus métricas del día para actualizar tus indicadores.</p>
+      <div className="flex items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div className="p-3 bg-rose-100 text-rose-600 rounded-lg">
+          <HeartPulse className="w-6 h-6" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Nuevo Registro de Bienestar</h1>
+          <p className="text-sm text-slate-500">Registra tus métricas diarias de salud emocional y física</p>
+        </div>
       </div>
 
-      {mensaje.texto && (
-        <div
-          className={`p-4 rounded-lg font-medium text-sm ${
-            mensaje.tipo === 'exito'
-              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-              : 'bg-red-50 text-red-800 border border-red-200'
-          }`}
-        >
-          {mensaje.texto}
+      {showSuccess && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 p-4 rounded-xl flex items-center gap-3 animate-fade-in-down">
+          <CheckCircle2 className="w-6 h-6" />
+          <div>
+            <p className="font-bold">¡Registro guardado con éxito!</p>
+            <p className="text-sm">Tus métricas de bienestar han sido guardadas en la base de datos.</p>
+          </div>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+      <form onSubmit={handleReviewSubmit} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Sueño */}
           <div>
             <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-              <Moon className="w-4 h-4 text-indigo-500" /> Horas de Sueño (0 - 24)
+              <Smile className="w-4 h-4 text-sky-500" /> Estado de Ánimo
             </label>
-            <input
-              type="number"
-              name="horas_sueno"
-              min="0"
-              max="24"
-              step="0.5"
-              required
-              value={formData.horas_sueno}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none"
-            />
+            <select 
+              value={formData.estadoAnimo}
+              onChange={(e) => setFormData({...formData, estadoAnimo: e.target.value})}
+              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none text-slate-700"
+            >
+              <option value="Excelente">Excelente 😄</option>
+              <option value="Bien">Bien 🙂</option>
+              <option value="Regular">Regular 😐</option>
+              <option value="Mal">Mal 😔</option>
+              <option value="Muy Mal">Muy Mal 😫</option>
+            </select>
           </div>
 
-          {/* Estrés */}
           <div>
             <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-              <Brain className="w-4 h-4 text-amber-500" /> Nivel de Estrés (1 - 10)
+              <Moon className="w-4 h-4 text-indigo-500" /> Horas de Sueño
             </label>
-            <input
-              type="number"
-              name="nivel_estres"
-              min="1"
-              max="10"
-              required
-              value={formData.nivel_estres}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none"
-            />
-          </div>
-
-          {/* Ánimo */}
-          <div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-              <Heart className="w-4 h-4 text-rose-500" /> Nivel de Ánimo (1 - 10)
-            </label>
-            <input
-              type="number"
-              name="nivel_animo"
-              min="1"
-              max="10"
-              required
-              value={formData.nivel_animo}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none"
-            />
-          </div>
-
-          {/* Estudio */}
-          <div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-              <BookOpen className="w-4 h-4 text-emerald-500" /> Horas de Estudio (0 - 24)
-            </label>
-            <input
-              type="number"
-              name="horas_estudio"
-              min="0"
-              max="24"
-              step="0.5"
-              required
-              value={formData.horas_estudio}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none"
-            />
-          </div>
-
-          {/* Actividad Física */}
-          <div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-              <Activity className="w-4 h-4 text-sky-500" /> Actividad Física (minutos)
-            </label>
-            <input
-              type="number"
-              name="actividad_fisica"
-              min="0"
-              value={formData.actividad_fisica}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none"
-            />
-          </div>
-
-          {/* Tipo de Actividad */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Tipo de Actividad</label>
-            <input
-              type="text"
-              name="actividad_fisica_tipo"
-              placeholder="Ej. Caminata, Gimnasio, Yoga"
-              value={formData.actividad_fisica_tipo}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none"
+            <input 
+              type="number" min="0" max="24" step="0.5" required
+              placeholder="Ej. 7.5"
+              value={formData.horasSueno}
+              onChange={(e) => setFormData({...formData, horasSueno: e.target.value})}
+              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none text-slate-700"
             />
           </div>
         </div>
 
-        {/* Emociones y Notas */}
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-2">Notas / Emociones</label>
-          <textarea
-            name="emociones"
-            rows={3}
-            placeholder="¿Cómo te sentiste hoy?"
-            value={formData.emociones}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none"
-          />
+          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
+            <Activity className="w-4 h-4 text-amber-500" /> Nivel de Estrés (1 al 10)
+          </label>
+          <div className="flex items-center gap-4">
+            <input 
+              type="range" min="1" max="10" 
+              value={formData.nivelEstres}
+              onChange={(e) => setFormData({...formData, nivelEstres: e.target.value})}
+              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-rose-500"
+            />
+            <span className="font-bold text-xl text-rose-600 w-8 text-center">{formData.nivelEstres}</span>
+          </div>
+          <div className="flex justify-between text-xs text-slate-400 mt-1">
+            <span>1 - Muy Relajado</span>
+            <span>10 - Muy Estresado</span>
+          </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition disabled:opacity-50"
-        >
-          <Save className="w-4 h-4" />
-          {loading ? 'Guardando...' : 'Guardar Registro'}
-        </button>
+        <div>
+          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
+            <HeartPulse className="w-4 h-4 text-emerald-500" /> Actividad Física
+          </label>
+          <select 
+            value={formData.actividadFisica}
+            onChange={(e) => setFormData({...formData, actividadFisica: e.target.value})}
+            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none text-slate-700"
+          >
+            <option value="Ninguna">Ninguna</option>
+            <option value="Ligera">Ligera (Caminar, estiramientos)</option>
+            <option value="Moderada">Moderada (Trote, bicicleta, gimnasio suave)</option>
+            <option value="Intensa">Intensa (Correr, entrenamiento pesado, deportes)</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
+            <FileText className="w-4 h-4 text-slate-400" /> Notas o Pensamientos (Opcional)
+          </label>
+          <textarea 
+            rows="3"
+            placeholder="¿Cómo te sentiste hoy? ¿Algún evento importante?"
+            value={formData.notas}
+            onChange={(e) => setFormData({...formData, notas: e.target.value})}
+            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none text-slate-700 resize-none"
+          ></textarea>
+        </div>
+
+        <div className="pt-4 border-t border-slate-100">
+          <button 
+            type="submit"
+            className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition-colors flex justify-center items-center gap-2 shadow-sm"
+          >
+            <CheckCircle2 className="w-5 h-5" /> Revisar y Continuar
+          </button>
+        </div>
       </form>
+
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in-up">
+            <div className="bg-rose-50 p-6 text-center border-b border-rose-100 relative">
+              <button 
+                onClick={() => setShowConfirmModal(false)}
+                className="absolute right-4 top-4 text-rose-400 hover:text-rose-600 bg-white rounded-full p-1 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="mx-auto w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-3">
+                <FileText className="w-6 h-6" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800">Resumen de tu día</h2>
+              <p className="text-sm text-slate-500 mt-1">Verifica que tus datos sean correctos antes de guardarlos.</p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                <span className="text-slate-500 text-sm font-medium">Estado de Ánimo:</span>
+                <span className="font-bold text-slate-800">{formData.estadoAnimo}</span>
+              </div>
+              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                <span className="text-slate-500 text-sm font-medium">Horas de Sueño:</span>
+                <span className="font-bold text-slate-800">{formData.horasSueno} h</span>
+              </div>
+              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                <span className="text-slate-500 text-sm font-medium">Nivel de Estrés:</span>
+                <span className="font-bold text-rose-600">{formData.nivelEstres} / 10</span>
+              </div>
+              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                <span className="text-slate-500 text-sm font-medium">Actividad Física:</span>
+                <span className="font-bold text-slate-800">{formData.actividadFisica}</span>
+              </div>
+              {formData.notas && (
+                <div className="pt-1">
+                  <span className="text-slate-500 text-sm font-medium block mb-1">Tus Notas:</span>
+                  <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg italic">"{formData.notas}"</p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 bg-slate-50 flex gap-3 border-t border-slate-100">
+              <button 
+                onClick={() => setShowConfirmModal(false)}
+                disabled={isSubmitting}
+                className="flex-1 py-2.5 px-4 text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 font-semibold rounded-xl transition-colors"
+              >
+                Volver a editar
+              </button>
+              <button 
+                onClick={handleFinalSubmit}
+                disabled={isSubmitting}
+                className="flex-1 py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+              >
+                {isSubmitting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Guardando...</>
+                ) : (
+                  <><Save className="w-4 h-4" /> Confirmar</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

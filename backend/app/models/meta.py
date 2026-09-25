@@ -8,6 +8,7 @@ class MetaBienestar(Base):
     __tablename__ = "metas_bienestar"
 
     id = Column(Integer, primary_key=True, index=True)
+    # unique=True hace que un usuario solo pueda tener un registro de metas
     usuario_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
 
     # Objetivos esperados
@@ -20,4 +21,5 @@ class MetaBienestar(Base):
     fecha_creacion = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relación con el usuario
+    # Apunta a la clase "User" y la variable "metas" dentro de esa clase
     usuario = relationship("User", back_populates="metas")

@@ -1,89 +1,80 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
-import { Sparkles, AlertCircle, AlertTriangle, Info, RefreshCw } from 'lucide-react';
+import { Lightbulb, AlertTriangle, Info, HeartPulse, Brain, Moon, BookOpen } from 'lucide-react';
 
 export default function Recomendaciones() {
-  const [consejos, setConsejos] = useState([]);
+  const [recomendaciones, setRecomendaciones] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchRecomendaciones = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get('/recomendaciones');
-      // Accedemos a la lista desde la propiedad recomendaciones
-      setConsejos(response.data.recomendaciones || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchRecomendaciones = async () => {
+      try {
+        const res = await api.get('/recomendaciones/');
+        setRecomendaciones(res.data.recomendaciones || []);
+      } catch (err) {
+        console.error('Error al cargar recomendaciones:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchRecomendaciones();
   }, []);
 
-  const getEstilosPorNivel = (nivel) => {
-    switch (nivel) {
-      case 'danger':
-        return {
-          card: 'bg-rose-50 border-rose-200 text-rose-900',
-          icon: <AlertCircle className="w-6 h-6 text-rose-600 shrink-0 mt-0.5" />,
-        };
-      case 'warning':
-        return {
-          card: 'bg-amber-50 border-amber-200 text-amber-900',
-          icon: <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />,
-        };
-      case 'info':
-      default:
-        return {
-          card: 'bg-sky-50 border-sky-200 text-sky-900',
-          icon: <Info className="w-6 h-6 text-sky-600 shrink-0 mt-0.5" />,
-        };
+  // Función para asignar colores e íconos dinámicamente según el nivel y categoría
+  const getEstilos = (nivel, categoria) => {
+    let estilos = { bg: 'bg-slate-50', border: 'border-slate-200', icon: <Info className="text-slate-500" />, text: 'text-slate-800' };
+
+    if (nivel === 'danger') {
+      estilos = { bg: 'bg-rose-50', border: 'border-rose-200', icon: <AlertTriangle className="text-rose-600" />, text: 'text-rose-900' };
+    } else if (nivel === 'warning') {
+      estilos = { bg: 'bg-amber-50', border: 'border-amber-200', icon: <Lightbulb className="text-amber-600" />, text: 'text-amber-900' };
+    } else if (nivel === 'info') {
+      estilos = { bg: 'bg-sky-50', border: 'border-sky-200', icon: <Info className="text-sky-600" />, text: 'text-sky-900' };
     }
+
+    // Sobrescribir íconos según categoría si se desea
+    if (categoria === 'sueno') estilos.icon = <Moon className={estilos.icon.props.className} />;
+    if (categoria === 'estres') estilos.icon = <Brain className={estilos.icon.props.className} />;
+    if (categoria === 'estudio') estilos.icon = <BookOpen className={estilos.icon.props.className} />;
+    if (categoria === 'actividad') estilos.icon = <HeartPulse className={estilos.icon.props.className} />;
+
+    return estilos;
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-indigo-500" /> Consejero de Bienestar
-          </h1>
-          <p className="text-slate-500 text-sm">Diagnóstico y sugerencias personalizadas de los últimos 7 días.</p>
-        </div>
-        <button
-          onClick={fetchRecomendaciones}
-          className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 font-medium px-3 py-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Actualizar
-        </button>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">Recomendaciones Inteligentes</h1>
+        <p className="text-slate-500 text-sm">Análisis basado en tus registros de los últimos 7 días.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {loading ? (
-          <div className="col-span-2 p-8 text-center text-slate-500 font-medium">Analizando hábitos de la semana...</div>
-        ) : consejos.length === 0 ? (
-          <div className="col-span-2 p-8 text-center text-slate-500">No hay recomendaciones disponibles en este momento.</div>
-        ) : (
-          consejos.map((item, index) => {
-            const estilo = getEstilosPorNivel(item.nivel);
+      {loading ? (
+        <div className="flex justify-center p-12 text-slate-400">
+          <p>Analizando tus patrones...</p>
+        </div>
+      ) : recomendaciones.length === 0 ? (
+        <div className="bg-white p-6 rounded-xl border border-slate-200 text-center text-slate-500">
+          No hay recomendaciones disponibles en este momento.
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {recomendaciones.map((rec, index) => {
+            const { bg, border, icon, text } = getEstilos(rec.nivel, rec.categoria);
             return (
-              <div
-                key={index}
-                className={`p-5 rounded-xl border flex gap-4 items-start shadow-sm transition ${estilo.card}`}
-              >
-                {estilo.icon}
+              <div key={index} className={`${bg} ${border} border p-5 rounded-xl shadow-sm flex items-start gap-4 transition-all hover:scale-[1.01]`}>
+                <div className="p-2 bg-white rounded-lg shadow-sm border border-white/50 shrink-0">
+                  {icon}
+                </div>
                 <div>
-                  <h3 className="font-bold text-base mb-1">{item.titulo}</h3>
-                  <p className="text-sm opacity-90 leading-relaxed">{item.mensaje}</p>
+                  <h3 className={`font-bold ${text} mb-1`}>{rec.titulo}</h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">{rec.mensaje}</p>
                 </div>
               </div>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </div>
   );
 }

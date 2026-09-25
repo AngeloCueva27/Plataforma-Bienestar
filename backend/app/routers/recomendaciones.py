@@ -1,16 +1,15 @@
 from datetime import date, timedelta
 from fastapi import APIRouter, Depends
-from sqlalchemy import func
+from sqlalchemy import func, cast, Integer
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.core.security import get_current_user
-from app.models.registro import RegistroBienestar
+from app.models.bienestar import RegistroBienestar
 from app.models.user import User
 from app.schemas.recomendaciones import Recomendacion, RecomendacionesResponse
 
 router = APIRouter(prefix="/recomendaciones", tags=["Recomendaciones"])
-
 
 @router.get("/", response_model=RecomendacionesResponse)
 def generar_recomendaciones(
@@ -25,7 +24,8 @@ def generar_recomendaciones(
             func.avg(RegistroBienestar.horas_sueno).label("avg_sueno"),
             func.avg(RegistroBienestar.nivel_estres).label("avg_estres"),
             func.avg(RegistroBienestar.horas_estudio).label("avg_estudio"),
-            func.avg(RegistroBienestar.actividad_fisica).label("avg_ejercicio"),
+            # AQUÍ ESTÁ LA CORRECCIÓN: Sumamos los días en lugar de promediarlos
+            func.sum(cast(RegistroBienestar.actividad_fisica, Integer)).label("dias_ejercicio"),
             func.count(RegistroBienestar.id).label("count"),
         )
         .filter(
@@ -51,7 +51,7 @@ def generar_recomendaciones(
     avg_sueno = stats.avg_sueno or 0.0
     avg_estres = stats.avg_estres or 0.0
     avg_estudio = stats.avg_estudio or 0.0
-    avg_ejercicio = stats.avg_ejercicio or 0.0
+    dias_ejercicio = stats.dias_ejercicio or 0
 
     # Evaluación de Sueño
     if avg_sueno < 6.0:
@@ -65,13 +65,13 @@ def generar_recomendaciones(
         )
 
     # Evaluación de Estrés
-    if avg_estres >= 7.0:
+    if avg_estres >= 6.0:
         items.append(
             Recomendacion(
                 categoria="estres",
                 nivel="warning",
                 titulo="Nivel de estrés elevado",
-                mensaje=f"Tu estrés promedio está en {round(avg_estres, 1)}/10. Realiza pausas activas y considera contactar al servicio de bienestar universitario.",
+                mensaje=f"Tu estrés promedio está en {round(avg_estres, 1)}/10. Realiza pausas activas para despejar la mente.",
             )
         )
 
@@ -87,13 +87,13 @@ def generar_recomendaciones(
         )
 
     # Evaluación de Actividad Física
-    if avg_ejercicio < 20.0:
+    if dias_ejercicio < 3:
         items.append(
             Recomendacion(
                 categoria="actividad",
                 nivel="info",
                 titulo="Mantente en movimiento",
-                mensaje="Tu promedio de ejercicio es menor a 20 minutos diarios. Una caminata breve ayuda a despejar la mente.",
+                mensaje=f"Solo has hecho ejercicio {dias_ejercicio} días esta semana. Una caminata breve ayuda a la salud física.",
             )
         )
 

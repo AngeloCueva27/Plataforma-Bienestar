@@ -1,6 +1,8 @@
 import traceback
 import app.models  # noqa: F401
 import app.models.user  # Registra el modelo User en SQLAlchemy
+import app.models.bienestar
+from app.routers import auth, bienestar, estadisticas, counselor, exportar, meta 
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -91,6 +93,11 @@ app.include_router(recomendaciones.router)
 app.include_router(exportar.router)
 app.include_router(counselor.router)
 
+# Inclusión de los routers en la aplicación
+app.include_router(auth.router)
+
+# EL TRUCO PARA EL DASHBOARD: Incluir estadísticas bajo el prefijo /bienestar
+app.include_router(estadisticas.router, prefix="/bienestar")
 
 @app.get("/", tags=["Health Check"])
 def read_root():

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.core.security import get_current_user
-from app.models.registro import RegistroBienestar
+from app.models.bienestar import RegistroBienestar
 from app.models.user import User
 from app.schemas.estadisticas import HistoricoRespuesta, PromediosSemanales, PuntoTendencia
 

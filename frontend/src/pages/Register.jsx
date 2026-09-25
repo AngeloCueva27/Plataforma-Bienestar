@@ -6,7 +6,8 @@ import { UserPlus, Activity } from 'lucide-react';
 export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [nombreCompleto, setNombreCompleto] = useState('');
+  const [nombre, setNombre] = useState(''); // Cambiado a 'nombre' para coincidir con la BD
+  const [ciclo, setCiclo] = useState('');   // Nuevo estado para el ciclo
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -18,14 +19,22 @@ export default function Register() {
     setLoading(true);
 
     try {
+      // El payload ahora coincide exactamente con lo que espera FastAPI y SQLAlchemy
       await api.post('/auth/register', {
         email,
         password,
-        nombre_completo: nombreCompleto,
+        nombre,
+        ciclo,
+        rol: 'estudiante' // Enviamos el rol por defecto
       });
       navigate('/login');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Error al registrar la cuenta');
+      // Mejora para capturar los errores de validación de Pydantic (como el min_length de 8 caracteres)
+      if (Array.isArray(err.response?.data?.detail)) {
+        setError(err.response.data.detail[0].msg);
+      } else {
+        setError(err.response?.data?.detail || 'Error al registrar la cuenta');
+      }
     } finally {
       setLoading(false);
     }
@@ -54,11 +63,33 @@ export default function Register() {
             <input
               type="text"
               required
-              value={nombreCompleto}
-              onChange={(e) => setNombreCompleto(e.target.value)}
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none"
               placeholder="Tu Nombre"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Ciclo Académico</label>
+            <select
+              required
+              value={ciclo}
+              onChange={(e) => setCiclo(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white"
+            >
+              <option value="" disabled>Selecciona tu ciclo</option>
+              <option value="1">I Ciclo</option>
+              <option value="2">II Ciclo</option>
+              <option value="3">III Ciclo</option>
+              <option value="4">IV Ciclo</option>
+              <option value="5">V Ciclo</option>
+              <option value="6">VI Ciclo</option>
+              <option value="7">VII Ciclo</option>
+              <option value="8">VIII Ciclo</option>
+              <option value="9">IX Ciclo</option>
+              <option value="10">X Ciclo</option>
+            </select>
           </div>
 
           <div>
@@ -69,7 +100,7 @@ export default function Register() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none"
-              placeholder="tu@email.com"
+              placeholder="tu@undac.edu.pe"
             />
           </div>
 
@@ -78,11 +109,13 @@ export default function Register() {
             <input
               type="password"
               required
+              minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none"
               placeholder="••••••••"
             />
+            <p className="text-xs text-slate-500 mt-1">Debe tener al menos 8 caracteres.</p>
           </div>
 
           <button

@@ -17,7 +17,7 @@ from app.core.security import (
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-# --- Esquema Pydantic para vista de administración ---
+# --- Esquemas Pydantic adicionales ---
 class UsuarioAdminResponse(BaseModel):
     id: int
     email: str
@@ -25,6 +25,10 @@ class UsuarioAdminResponse(BaseModel):
     es_admin: bool = False
 
     model_config = ConfigDict(from_attributes=True)
+
+class PasswordResetRequest(BaseModel):
+    user_id: int
+    new_password: str
 
 
 # --- Endpoints ---
@@ -68,7 +72,15 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         )
 
     # 2. Crear el token JWT
-    access_token = create_access_token(data={"sub": user.email})
+    rol_usuario = user.rol.value if hasattr(user.rol, 'value') else user.rol
+    
+    # AQUÍ ESTÁ EL CAMBIO: Agregamos "nombre" al token
+    access_token = create_access_token(data={
+        "sub": user.email,
+        "rol": rol_usuario,
+        "nombre": user.nombre
+    })
+    
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -94,3 +106,32 @@ def listar_usuarios(
         })
         
     return resultado
+
+
+@router.put("/reset-password")
+def reset_password(
+    req: PasswordResetRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # 1. Verificar que quien hace la petición es realmente un administrador
+    rol_actual = current_user.rol.value if hasattr(current_user.rol, 'value') else current_user.rol
+    if rol_actual != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para realizar esta acción."
+        )
+        
+    # 2. Buscar al usuario al que le cambiaremos la contraseña
+    user_to_update = db.query(User).filter(User.id == req.user_id).first()
+    if not user_to_update:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado."
+        )
+        
+    # 3. Encriptar la nueva contraseña y guardarla
+    user_to_update.hashed_password = get_password_hash(req.new_password)
+    db.commit()
+    
+    return {"message": f"Contraseña actualizada exitosamente para el usuario {user_to_update.email}"}

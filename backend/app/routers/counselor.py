@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.core.security import requerir_roles
-from app.models.registro import RegistroBienestar
+from app.models.bienestar import RegistroBienestar
 from app.models.user import User, RoleEnum
 
 router = APIRouter(prefix="/counselor", tags=["Panel de Consejería"])

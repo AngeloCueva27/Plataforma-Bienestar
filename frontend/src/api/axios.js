@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000',
+  baseURL: 'http://localhost:8000', // Estandarizado a localhost para evitar choques CORS
   headers: {
     'Content-Type': 'application/json',
   },
@@ -9,7 +9,9 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    // Buscará 'token' y, si no lo encuentra, buscará 'access_token'
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

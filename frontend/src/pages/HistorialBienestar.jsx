@@ -15,6 +15,10 @@ export default function HistorialBienestar() {
       setHistorial(res.data || []);
     } catch (err) {
       console.error('Error al cargar historial', err);
+      // Alerta visual si se pierde el token de sesión
+      if (err.response?.status === 401) {
+        alert('Tu sesión ha expirado o se perdió la conexión. Por favor, vuelve a iniciar sesión.');
+      }
     } finally {
       setLoading(false);
     }
@@ -34,21 +38,24 @@ export default function HistorialBienestar() {
   });
 
   // Exportar el historial filtrado a formato CSV
-  const exportarCSV = () => {
+const exportarCSV = () => {
     if (historialFiltrado.length === 0) return;
 
-    const encabezados = ['ID', 'Fecha', 'Horas Sueño', 'Nivel Estrés', 'Horas Estudio', 'Actividad Física (min)', 'Notas'];
+    const encabezados = ['ID', 'Fecha', 'Horas Sueño', 'Nivel Estrés', 'Horas Estudio', 'Actividad Física', 'Emociones'];
     const filas = historialFiltrado.map((item) => [
       item.id,
       item.fecha ? item.fecha.split('T')[0] : '',
       item.horas_sueno,
       item.nivel_estres,
       item.horas_estudio,
-      item.actividad_fisica || 0,
-      `"${(item.notas || '').replace(/"/g, '""')}"`
+      item.actividad_fisica || '-',
+      `"${(item.emociones || '').replace(/"/g, '""')}"`
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [encabezados.join(','), ...filas.map((e) => e.join(','))].join('\n');
+    // AQUÍ ESTÁ LA MAGIA: Cambiamos join(',') por join(';') para que Excel en español lo lea bien
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + 
+      [encabezados.join(';'), ...filas.map((e) => e.join(';'))].join('\n');
+      
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
@@ -61,7 +68,8 @@ export default function HistorialBienestar() {
   const eliminarRegistro = async (id) => {
     if (!window.confirm('¿Deseas eliminar este registro?')) return;
     try {
-      await api.delete(`/bienestar/registro/${id}`);
+      // Corregida la ruta del backend
+      await api.delete(`/bienestar/${id}`);
       setHistorial(historial.filter((item) => item.id !== id));
     } catch (err) {
       console.error('Error al eliminar registro', err);
@@ -128,7 +136,7 @@ export default function HistorialBienestar() {
                 <th className="px-6 py-3">Estrés</th>
                 <th className="px-6 py-3">Estudio</th>
                 <th className="px-6 py-3">Ejercicio</th>
-                <th className="px-6 py-3">Notas</th>
+                <th className="px-6 py-3">Emociones</th>
                 <th className="px-6 py-3 text-right">Acciones</th>
               </tr>
             </thead>
@@ -154,8 +162,8 @@ export default function HistorialBienestar() {
                     <td className="px-6 py-4">{item.horas_sueno} hrs</td>
                     <td className="px-6 py-4">{item.nivel_estres} / 10</td>
                     <td className="px-6 py-4">{item.horas_estudio} hrs</td>
-                    <td className="px-6 py-4">{item.actividad_fisica || 0} min</td>
-                    <td className="px-6 py-4 max-w-xs truncate text-slate-500">{item.notas || '-'}</td>
+                    <td className="px-6 py-4">{item.actividad_fisica || '-'}</td>
+                    <td className="px-6 py-4 max-w-xs truncate text-slate-500">{item.emociones || '-'}</td>
                     <td className="px-6 py-4 text-right">
                       <button
                         onClick={() => eliminarRegistro(item.id)}

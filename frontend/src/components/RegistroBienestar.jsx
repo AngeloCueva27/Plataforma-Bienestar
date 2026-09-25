@@ -35,7 +35,7 @@ export function RegistroBienestar() {
       nivel_estres: parseInt(formData.nivel_estres, 10) || 1,
       nivel_animo: parseInt(formData.nivel_animo, 10) || 1,
       emociones: formData.emociones || '',
-      horas_estudio: parseFloat(formData.horas_estudio) || 0,
+      horasEstudio: Number(horasEstudio) || 0,
     };
 
     try {

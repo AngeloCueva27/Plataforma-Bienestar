@@ -6,7 +6,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 
-// Páginas
+// Páginas Estudiantes
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -15,7 +15,12 @@ import HistorialBienestar from './pages/HistorialBienestar';
 import Recomendaciones from './pages/Recomendaciones';
 import Metas from './pages/Metas';
 import Perfil from './pages/Perfil';
+
+// Páginas Administrador
 import AdminUsuarios from './pages/AdminUsuarios';
+import AdminEstudiantes from './pages/AdminEstudiantes';
+import AdminAuditoria from './pages/AdminAuditoria';
+import AdminRestablecer from './pages/AdminRestablecer';
 
 function MainLayout() {
   return (
@@ -48,13 +53,19 @@ export default function App() {
               </ProtectedRoute>
             }
           >
+            {/* Rutas de Estudiante */}
             <Route path="/" element={<Dashboard />} />
             <Route path="/bienestar/registrar" element={<RegistroBienestar />} />
             <Route path="/bienestar/historial" element={<HistorialBienestar />} />
             <Route path="/bienestar/recomendaciones" element={<Recomendaciones />} />
             <Route path="/bienestar/metas" element={<Metas />} />
             <Route path="/perfil" element={<Perfil />} />
+
+            {/* Rutas de Administrador */}
             <Route path="/admin/usuarios" element={<AdminUsuarios />} />
+            <Route path="/admin/estudiantes" element={<AdminEstudiantes />} />
+            <Route path="/admin/auditoria" element={<AdminAuditoria />} />
+            <Route path="/admin/restablecer" element={<AdminRestablecer />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,16 +1,35 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, History, Lightbulb, Target, Users, User, HeartPulse } from 'lucide-react';
+import { 
+  LayoutDashboard, PlusCircle, History, Lightbulb, Target, 
+  Users, User, HeartPulse, ShieldCheck, GraduationCap, KeyRound 
+} from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Sidebar() {
+  const { user } = useAuth();
+  
+  // Extraemos el rol. Si no hay, asumimos estudiante
+  const userRole = user?.rol || 'estudiante';
+
+  // Definimos a qué rol le pertenece cada ruta usando la propiedad "role"
   const navItems = [
-    { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/bienestar/registrar', label: 'Nuevo Registro', icon: PlusCircle },
-    { path: '/bienestar/historial', label: 'Historial', icon: History },
-    { path: '/bienestar/recomendaciones', label: 'Recomendaciones', icon: Lightbulb },
-    { path: '/bienestar/metas', label: 'Metas', icon: Target },
-    { path: '/perfil', label: 'Mi Perfil', icon: User },
-    { path: '/admin/usuarios', label: 'Usuarios', icon: Users },
+    // --- RUTAS DE ESTUDIANTE ---
+    { path: '/', label: 'Dashboard', icon: LayoutDashboard, role: 'estudiante' },
+    { path: '/bienestar/registrar', label: 'Nuevo Registro', icon: PlusCircle, role: 'estudiante' },
+    { path: '/bienestar/historial', label: 'Historial', icon: History, role: 'estudiante' },
+    { path: '/bienestar/recomendaciones', label: 'Recomendaciones', icon: Lightbulb, role: 'estudiante' },
+    { path: '/bienestar/metas', label: 'Metas', icon: Target, role: 'estudiante' },
+    { path: '/perfil', label: 'Mi Perfil', icon: User, role: 'estudiante' },
+
+    // --- RUTAS DE ADMINISTRADOR ---
+    { path: '/admin/usuarios', label: 'Gestión de Usuarios', icon: Users, role: 'admin' },
+    { path: '/admin/estudiantes', label: 'Perfiles Estudiantiles', icon: GraduationCap, role: 'admin' },
+    { path: '/admin/auditoria', label: 'Auditoría', icon: ShieldCheck, role: 'admin' },
+    { path: '/admin/restablecer', label: 'Restablecer Contraseñas', icon: KeyRound, role: 'admin' },
   ];
+
+  // El filtro mágico: Solo dejamos pasar los items que coincidan con el rol del usuario actual
+  const filteredNavItems = navItems.filter((item) => item.role === userRole);
 
   return (
     <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col h-full">
@@ -18,11 +37,13 @@ export default function Sidebar() {
         <div className="p-2 bg-sky-500 text-white rounded-lg">
           <HeartPulse className="w-6 h-6" />
         </div>
-        <span className="font-bold text-white text-lg tracking-wide">BienestarApp</span>
+        <span className="font-bold text-white text-lg tracking-wide">
+          {userRole === 'admin' ? 'AdminPanel' : 'BienestarApp'}
+        </span>
       </div>
 
       <nav className="flex-1 p-4 space-y-1">
-        {navItems.map((item) => {
+        {filteredNavItems.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink

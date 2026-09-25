@@ -5,5 +5,5 @@ Base = declarative_base()
 
 # Importar todos los modelos para registrar sus relaciones en SQLAlchemy
 from app.models.user import User
-from app.models.registro import RegistroBienestar
+from app.models.bienestar import RegistroBienestar
 from app.models.meta import MetaBienestar

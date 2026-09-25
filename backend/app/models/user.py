@@ -3,7 +3,6 @@ from sqlalchemy import Column, Integer, String, Boolean, Enum
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 
-# Enum con todos los roles requeridos por el sistema
 class RoleEnum(str, enum.Enum):
     estudiante = "estudiante"
     docente = "docente"
@@ -12,13 +11,25 @@ class RoleEnum(str, enum.Enum):
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, index=True)
+    nombre = Column(String, nullable=False)
+    ciclo = Column(String, nullable=True)
+    rol = Column(String, default="estudiante", nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    
-    role = Column(Enum(RoleEnum), default=RoleEnum.estudiante, nullable=False)
     is_active = Column(Boolean, default=True)
-
-    # Relación bidireccional con RegistroBienestar
-    registros = relationship("RegistroBienestar", back_populates="usuario")
+    
+    # RUTA COMPLETA EXACTA HACIA BIENESTAR
+    registros = relationship(
+        "app.models.bienestar.RegistroBienestar", 
+        back_populates="usuario"
+    )
+    
+    # RUTA COMPLETA EXACTA HACIA METAS
+    metas = relationship(
+        "app.models.meta.MetaBienestar", 
+        back_populates="usuario", 
+        uselist=False
+    )
