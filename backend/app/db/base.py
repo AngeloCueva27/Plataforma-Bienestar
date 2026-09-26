@@ -7,3 +7,4 @@ Base = declarative_base()
 from app.models.user import User
 from app.models.bienestar import RegistroBienestar
 from app.models.meta import MetaBienestar
+from app.models.ai_models import RecomendacionIA, ConversacionChat, MensajeChat, AlertaBienestar, AuditoriaIA

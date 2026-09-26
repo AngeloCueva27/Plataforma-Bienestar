@@ -1,4 +1,5 @@
 import traceback
+from app.routers import ai_router
 import app.models  # noqa: F401
 import app.models.user  # Registra el modelo User en SQLAlchemy
 import app.models.bienestar
@@ -36,6 +37,7 @@ app = FastAPI(
 # Integración del limitador de peticiones (Rate Limiter)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.include_router(ai_router.router)
 
 # Configuración de CORS para el Frontend
 origins = [

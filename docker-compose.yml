@@ -21,6 +21,8 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgrespassword@db:5432/bienestardb
       SECRET_KEY: tu_clave_secreta_super_segura
+    env_file:
+      - ./backend/.env
     volumes:
       - ./backend:/app
     depends_on:

@@ -10,7 +10,14 @@ export default function Recomendaciones() {
     const fetchRecomendaciones = async () => {
       try {
         const res = await api.get('/recomendaciones/');
-        setRecomendaciones(res.data.recomendaciones || []);
+        
+        // Lógica a prueba de balas: 
+        // Si Python envía una lista directa, la usa. Si envía el objeto, extrae la propiedad.
+        const datosReales = Array.isArray(res.data) 
+          ? res.data 
+          : (res.data?.recomendaciones || []);
+          
+        setRecomendaciones(datosReales);
       } catch (err) {
         console.error('Error al cargar recomendaciones:', err);
       } finally {

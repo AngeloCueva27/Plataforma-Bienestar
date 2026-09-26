@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 from fastapi import APIRouter, Depends
-from sqlalchemy import func, cast, Integer
+from sqlalchemy import func, case
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -24,13 +24,18 @@ def generar_recomendaciones(
             func.avg(RegistroBienestar.horas_sueno).label("avg_sueno"),
             func.avg(RegistroBienestar.nivel_estres).label("avg_estres"),
             func.avg(RegistroBienestar.horas_estudio).label("avg_estudio"),
-            # AQUÍ ESTÁ LA CORRECCIÓN: Sumamos los días en lugar de promediarlos
-            func.sum(cast(RegistroBienestar.actividad_fisica, Integer)).label("dias_ejercicio"),
+            # SOLUCIÓN: Si es 'Ninguna' suma 0, si es 'Moderada/Ligera/Alta' suma 1
+            func.sum(
+                case(
+                    (RegistroBienestar.actividad_fisica.in_(["Ninguna", "Ninguno", "Nada", ""]), 0),
+                    else_=1
+                )
+            ).label("dias_ejercicio"),
             func.count(RegistroBienestar.id).label("count"),
         )
         .filter(
-            RegistroBienestar.user_id == usuario_actual.id,
-            RegistroBienestar.fecha >= hace_7_dias,
+            RegistroBienestar.usuario_id == usuario_actual.id,
+            RegistroBienestar.fecha_registro >= hace_7_dias,
         )
         .first()
     )

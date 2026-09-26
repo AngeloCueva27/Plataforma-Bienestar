@@ -1,122 +1,134 @@
-  import { useEffect, useState } from 'react';
-  import api from '../services/api';
-  import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-  import { Moon, Brain, BookOpen, Activity } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Moon, Brain, BookOpen, Activity } from 'lucide-react';
+import api from '../services/api';
+import ChatbotBienestar from '../components/ChatbotBienestar';
 
-  export default function Dashboard() {
-    const [stats, setStats] = useState(null);
-    const [historial, setHistorial] = useState([]);
-    const [loading, setLoading] = useState(true);
+export default function Dashboard() {
+  const [estadisticas, setEstadisticas] = useState({
+    promedio_sueno: 0,
+    promedio_estres: 0,
+    promedio_estudio: 0,
+    total_registros: 0
+  });
+  
+  // Nuevo estado exclusivo para las líneas del gráfico
+  const [historialGrafico, setHistorialGrafico] = useState([]); 
+  const [cargando, setCargando] = useState(true);
 
-    useEffect(() => {
-      const fetchData = async () => {
-        try {
-          const [resStats, resHistorial] = await Promise.all([
-            api.get('/bienestar/estadisticas'),
-            api.get('/bienestar/historial')
-          ]);
-          setStats(resStats.data);
-          
-          // Formatear la fecha para limpiar el eje X del gráfico
-          const datosOrdenados = [...(resHistorial.data || [])]
-            .reverse()
-            .map((item) => ({
-              ...item,
-              fechaFormateada: item.fecha ? item.fecha.split('T')[0] : ''
-            }));
-          setHistorial(datosOrdenados);
-        } catch (err) {
-          console.error(err);
-        } finally {
-          setLoading(false);
+  useEffect(() => {
+    const cargarDatos = async () => {
+      try {
+        // 1. Cargamos los números para las 4 tarjetas superiores
+        const resEstadisticas = await api.get('/bienestar/estadisticas');
+        if (resEstadisticas.data) {
+          setEstadisticas(resEstadisticas.data);
         }
-      };
 
-      fetchData();
-    }, []);
+        // 2. Cargamos el historial para dibujar el gráfico
+        const resHistorial = await api.get('/bienestar/historial');
+        if (resHistorial.data) {
+          // Extraemos el arreglo directamente, o lo buscamos si viene dentro de una propiedad
+          const datosGrafico = Array.isArray(resHistorial.data) ? resHistorial.data : (resHistorial.data.registros || []);
+          setHistorialGrafico(datosGrafico);
+        }
 
-    if (loading) {
-      return <div className="p-8 text-center text-slate-500 font-medium">Cargando métricas del panel...</div>;
-    }
+      } catch (error) {
+        console.error("Error al cargar los datos del Dashboard:", error);
+      } finally {
+        setCargando(false);
+      }
+    };
+    cargarDatos();
+  }, []);
 
-    // Compatibilidad con las distintas claves que puede retornar la API
-    const promedioSueno = stats?.promedio_sueno ?? stats?.promedio_horas_sueno ?? stats?.avg_sueno ?? 0;
-    const promedioEstres = stats?.promedio_estres ?? stats?.promedio_nivel_estres ?? stats?.avg_estres ?? 0;
-    const promedioEstudio = stats?.promedio_estudio ?? stats?.promedio_horas_estudio ?? stats?.avg_estudio ?? 0;
-    const totalRegistros = stats?.total_registros ?? stats?.total ?? 0;
-
+  if (cargando) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Panel Principal</h1>
-          <p className="text-slate-500 text-sm">Resumen de tus métricas y evolución reciente.</p>
-        </div>
-
-        {/* Tarjetas Informativas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
-              <Moon className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 uppercase font-semibold">Promedio Sueño</p>
-              <p className="text-xl font-bold text-slate-800">{promedioSueno} hrs</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
-              <Brain className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 uppercase font-semibold">Promedio Estrés</p>
-              <p className="text-xl font-bold text-slate-800">{promedioEstres} / 10</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-              <BookOpen className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 uppercase font-semibold">Promedio Estudio</p>
-              <p className="text-xl font-bold text-slate-800">{promedioEstudio} hrs</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-sky-50 text-sky-600 rounded-lg">
-              <Activity className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 uppercase font-semibold">Registros Totales</p>
-              <p className="text-xl font-bold text-slate-800">{totalRegistros}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Gráfico de Evolución */}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <h2 className="text-lg font-bold text-slate-800 mb-4">Evolución Temporal</h2>
-          {historial.length === 0 ? (
-            <p className="text-slate-500 text-sm text-center py-10">Ingresa nuevos registros para visualizarlos en el gráfico.</p>
-          ) : (
-            <div className="h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={historial}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="fechaFormateada" stroke="#94a3b8" fontSize={12} />
-                  <YAxis stroke="#94a3b8" fontSize={12} />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="horas_sueno" name="Sueño (hrs)" stroke="#6366f1" strokeWidth={2.5} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="nivel_estres" name="Estrés (1-10)" stroke="#f59e0b" strokeWidth={2.5} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="horas_estudio" name="Estudio (hrs)" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
+      <div className="flex justify-center items-center h-64 text-slate-500 font-medium">
+        Cargando tu panel de bienestar...
       </div>
     );
   }
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-8 pb-10">
+      
+      {/* Encabezado */}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">Panel Principal</h1>
+        <p className="text-slate-500">Resumen de tus métricas y evolución reciente.</p>
+      </div>
+
+      {/* Tarjetas de Métricas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><Moon className="w-6 h-6" /></div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Promedio Sueño</p>
+            <p className="text-2xl font-bold text-slate-800">{estadisticas.promedio_sueno} hrs</p>
+          </div>
+        </div>
+        
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+          <div className="p-3 bg-orange-50 text-orange-600 rounded-xl"><Brain className="w-6 h-6" /></div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Promedio Estrés</p>
+            <p className="text-2xl font-bold text-slate-800">{estadisticas.promedio_estres} / 10</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><BookOpen className="w-6 h-6" /></div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Promedio Estudio</p>
+            <p className="text-2xl font-bold text-slate-800">{estadisticas.promedio_estudio} hrs</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+          <div className="p-3 bg-sky-50 text-sky-600 rounded-xl"><Activity className="w-6 h-6" /></div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Registros Totales</p>
+            <p className="text-2xl font-bold text-slate-800">{estadisticas.total_registros}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Gráfico de Evolución Temporal */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <h3 className="text-lg font-bold text-slate-800 mb-6">Evolución Temporal</h3>
+        <div className="h-[300px] w-full">
+          {historialGrafico.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              {/* Le inyectamos historialGrafico al LineChart */}
+              <LineChart data={historialGrafico} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="fecha" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '13px', paddingTop: '20px' }} />
+                <Line type="monotone" name="Estrés (1-10)" dataKey="estres" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                <Line type="monotone" name="Estudio (hrs)" dataKey="horas_estudio" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                <Line type="monotone" name="Sueño (hrs)" dataKey="horas_sueno" stroke="#6366f1" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+             <div className="flex h-full items-center justify-center text-slate-400 text-sm">
+               Agrega un nuevo registro para ver tu evolución gráfica.
+             </div>
+          )}
+        </div>
+      </div>
+
+      {/* ========================================= */}
+      {/* SECCIÓN DEL CHATBOT DE INTELIGENCIA ARTIFICIAL */}
+      {/* ========================================= */}
+      <div className="mt-8">
+        <ChatbotBienestar />
+      </div>
+
+    </div>
+  );
+}
