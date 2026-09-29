@@ -2,34 +2,54 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 from datetime import datetime
 
+# ==========================================
 # Lo que recibimos de React al crear
+# ==========================================
 class RegistroBienestarCreate(BaseModel):
-    estadoAnimo: str
-    nivelEstres: int
-    horasSueno: float
-    horasEstudio: float
+    horasSueno: float = Field(ge=0.0)
+    comidasRealizadas: int = Field(ge=0, le=10, default=3)
+    vasosAgua: int = Field(ge=0, le=20, default=0)
     actividadFisica: str
-    notas: Optional[str] = None
+    minutosActividadFisica: int = Field(ge=0, default=0)
+    nivelEnergia: int = Field(ge=1, le=10, default=5)
 
-# Lo que le devolvemos a React para el historial
+    estadoAnimo: str
+    nivelAnimo: int = Field(ge=1, le=10, default=5)
+    nivelEstres: int = Field(ge=1, le=10)
+    emocionesPredominantes: Optional[str] = None
+    notas: Optional[str] = Field(None, max_length=300)
+
+    horasEstudio: float = Field(ge=0.0)
+    nivelConcentracion: int = Field(ge=1, le=10, default=5)
+    rendimientoPercibido: int = Field(ge=1, le=10, default=5)
+    pausasEstudio: bool = Field(default=False)
+
+# ==========================================
+# Lo que le devolvemos a React (Tolerante con NULLs viejos)
+# ==========================================
 class RegistroBienestarResponse(BaseModel):
     id: int
     usuario_id: int
-    
-    # React espera "fecha"
     fecha: datetime = Field(validation_alias="fecha_registro")
     
-    # React espera estos con guion bajo
+    # Campos antiguos (Obligatorios)
     horas_sueno: float
-    nivel_estres: int
-    horas_estudio: float
-    # React espera un string "Sí" o "No" para actividad, pero la BD guarda un string
     actividad_fisica: str
+    nivel_estres: int
+    estado_animo: str
     
-    # React pide emociones y horas_estudio (que no están en tu BD). 
-    # Creamos variables "ficticias" leyendo de otros lados para que la tabla no se rompa
-    emociones: str = Field(validation_alias="estado_animo") # Usamos el estado_animo como emociones
-    horas_estudio: float = 0.0 # No tenemos esto en la BD, mandamos 0
+    # Nuevos campos transdisciplinarios (Opcionales para no romper registros previos)
+    comidas_realizadas: Optional[int] = 3
+    vasos_agua: Optional[int] = 0
+    minutos_actividad_fisica: Optional[int] = 0
+    nivel_energia: Optional[int] = 5
+    nivel_animo: Optional[int] = 5
+    nivel_concentracion: Optional[int] = 5
+    rendimiento_percibido: Optional[int] = 5
+    pausas_estudio: Optional[bool] = False
+    
+    emociones: str = Field(validation_alias="estado_animo")
+    horas_estudio: Optional[float] = 0.0
     notas: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)

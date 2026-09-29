@@ -22,6 +22,9 @@ import AdminEstudiantes from './pages/AdminEstudiantes';
 import AdminAuditoria from './pages/AdminAuditoria';
 import AdminRestablecer from './pages/AdminRestablecer';
 
+// Páginas Especialistas (NUEVO)
+import PanelEspecialista from './pages/PanelEspecialista';
+
 function MainLayout() {
   return (
     <div className="flex h-screen bg-slate-100 overflow-hidden">
@@ -60,6 +63,9 @@ export default function App() {
             <Route path="/bienestar/recomendaciones" element={<Recomendaciones />} />
             <Route path="/bienestar/metas" element={<Metas />} />
             <Route path="/perfil" element={<Perfil />} />
+
+            {/* Rutas de Especialista (NUEVO) */}
+            <Route path="/bienestar/especialistas" element={<PanelEspecialista />} />
 
             {/* Rutas de Administrador */}
             <Route path="/admin/usuarios" element={<AdminUsuarios />} />

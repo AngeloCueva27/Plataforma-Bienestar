@@ -1,29 +1,38 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from datetime import datetime
 
 # ==========================================
-# ESQUEMAS PARA LA ESTRUCTURA JSON DE GEMINI
+# 1. ESQUEMAS PARA RECOMENDACIONES IA
 # ==========================================
-class ChatResponseGemini(BaseModel):
-    respuesta: str = Field(description="Respuesta al usuario en formato texto claro")
-    disciplinas: list[str] = Field(description="Disciplinas involucradas (ej. Psicología, Ciencias de la Educación, IA)")
-    tipo_respuesta: str = Field(description="orientacion_general, riesgo_detectado, fuera_de_alcance")
-    requiere_apoyo_profesional: bool = Field(description="True si se detecta crisis o riesgo físico/emocional grave")
-    mensaje_apoyo: Optional[str] = Field(description="Mensaje sugiriendo ayuda profesional si se requiere, null en caso contrario")
+class RecomendacionItemIA(BaseModel):
+    categoria: str
+    prioridad: str
+    titulo: str
+    contenido: str = Field(max_length=300)
+    disciplinas: List[str]
+    disclaimer: str
+
+class RecomendacionResponseIA(BaseModel):
+    resumen: str
+    recomendaciones: List[RecomendacionItemIA]
+
+class FeedbackCreate(BaseModel):
+    tipo_feedback: str # util, no_util, reporte
+    comentario: Optional[str] = None
 
 # ==========================================
-# ESQUEMAS PARA LA API REST (Frontend)
+# 2. ESQUEMAS PARA EL CHATBOT TRANSDISCIPLINARIO
 # ==========================================
 class ChatMessageCreate(BaseModel):
-    contenido: str = Field(max_length=800)
+    # Aceptamos ambas llaves posibles para evitar el error 422 de FastAPI
+    mensaje: Optional[str] = Field(None, max_length=800)
+    contenido: Optional[str] = Field(None, max_length=800, description="El mensaje del estudiante")
+
+    def extraer_texto(self) -> str:
+        """Devuelve el texto sin importar qué llave usó el frontend."""
+        return self.mensaje if self.mensaje else (self.contenido or "")
 
 class ChatMessageResponse(BaseModel):
-    id: int
-    emisor: str
     contenido: str
-    disciplinas: Optional[list[str]] = None
-    fecha_creacion: datetime
-    
-    class Config:
-        from_attributes = True
+    disciplinas: Optional[List[str]] = []
+    requiere_apoyo_profesional: bool = False

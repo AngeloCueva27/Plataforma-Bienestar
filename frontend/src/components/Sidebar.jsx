@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, PlusCircle, History, Lightbulb, Target, 
-  Users, User, HeartPulse, ShieldCheck, GraduationCap, KeyRound 
+  Users, User, HeartPulse, ShieldCheck, GraduationCap, KeyRound,
+  ClipboardCheck // <-- Importamos el nuevo ícono
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -20,6 +21,9 @@ export default function Sidebar() {
     { path: '/bienestar/recomendaciones', label: 'Recomendaciones', icon: Lightbulb, role: 'estudiante' },
     { path: '/bienestar/metas', label: 'Metas', icon: Target, role: 'estudiante' },
     { path: '/perfil', label: 'Mi Perfil', icon: User, role: 'estudiante' },
+    
+    // --- RUTAS DE ESPECIALISTA (Visible temporalmente para el estudiante para poder probarlo) ---
+    { path: '/bienestar/especialistas', label: 'Panel Especialista', icon: ClipboardCheck, role: 'estudiante' },
 
     // --- RUTAS DE ADMINISTRADOR ---
     { path: '/admin/usuarios', label: 'Gestión de Usuarios', icon: Users, role: 'admin' },

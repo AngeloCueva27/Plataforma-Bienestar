@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Moon, Brain, BookOpen, Activity } from 'lucide-react';
+import { Moon, Brain, BookOpen, Activity, Droplet, Utensils, Target } from 'lucide-react';
 import api from '../services/api';
 import ChatbotBienestar from '../components/ChatbotBienestar';
+import PatronBienestarCard from '../components/bienestar/PatronBienestarCard';
+import AlertasPreventivas from '../components/bienestar/AlertasPreventivas';
 
 export default function Dashboard() {
   const [estadisticas, setEstadisticas] = useState({
@@ -12,27 +14,22 @@ export default function Dashboard() {
     total_registros: 0
   });
   
-  // Nuevo estado exclusivo para las líneas del gráfico
   const [historialGrafico, setHistorialGrafico] = useState([]); 
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
     const cargarDatos = async () => {
       try {
-        // 1. Cargamos los números para las 4 tarjetas superiores
         const resEstadisticas = await api.get('/bienestar/estadisticas');
         if (resEstadisticas.data) {
           setEstadisticas(resEstadisticas.data);
         }
 
-        // 2. Cargamos el historial para dibujar el gráfico
         const resHistorial = await api.get('/bienestar/historial');
         if (resHistorial.data) {
-          // Extraemos el arreglo directamente, o lo buscamos si viene dentro de una propiedad
           const datosGrafico = Array.isArray(resHistorial.data) ? resHistorial.data : (resHistorial.data.registros || []);
           setHistorialGrafico(datosGrafico);
         }
-
       } catch (error) {
         console.error("Error al cargar los datos del Dashboard:", error);
       } finally {
@@ -50,16 +47,27 @@ export default function Dashboard() {
     );
   }
 
+  // Cálculos dinámicos transdisciplinarios basados en los últimos 7 días
+  const ultimos7Dias = historialGrafico.slice(0, 7);
+  const calcPromedio = (campo) => {
+    if (ultimos7Dias.length === 0) return 0;
+    const sum = ultimos7Dias.reduce((acc, curr) => acc + (curr[campo] || 0), 0);
+    return (sum / ultimos7Dias.length).toFixed(1);
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-10">
       
       {/* Encabezado */}
       <div>
         <h1 className="text-2xl font-bold text-slate-800">Panel Principal</h1>
-        <p className="text-slate-500">Resumen de tus métricas y evolución reciente.</p>
+        <p className="text-slate-500">Resumen integral transdisciplinario de tus métricas recientes.</p>
       </div>
 
-      {/* Tarjetas de Métricas */}
+      {/* COMPONENTE DE ALERTAS PREVENTIVAS */}
+      <AlertasPreventivas />
+
+      {/* Tarjetas de Métricas Originales */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
           <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><Moon className="w-6 h-6" /></div>
@@ -94,13 +102,40 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* NUEVO: Fila Transdisciplinaria */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+         <div className="bg-green-50/50 p-4 rounded-xl border border-green-100 flex justify-between items-center">
+            <div>
+              <p className="text-xs font-bold text-green-600 uppercase tracking-wider mb-1">Nutrición (Promedio)</p>
+              <p className="text-lg font-bold text-slate-700">{calcPromedio('comidas_realizadas')} Comidas</p>
+            </div>
+            <Utensils className="text-green-500 w-8 h-8 opacity-50" />
+         </div>
+         <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex justify-between items-center">
+            <div>
+              <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">Hidratación (Promedio)</p>
+              <p className="text-lg font-bold text-slate-700">{calcPromedio('vasos_agua')} Vasos/día</p>
+            </div>
+            <Droplet className="text-blue-500 w-8 h-8 opacity-50" />
+         </div>
+         <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100 flex justify-between items-center">
+            <div>
+              <p className="text-xs font-bold text-orange-600 uppercase tracking-wider mb-1">C. de la Educación</p>
+              <p className="text-lg font-bold text-slate-700">{calcPromedio('nivel_concentracion')} /10 Concentración</p>
+            </div>
+            <Target className="text-orange-500 w-8 h-8 opacity-50" />
+         </div>
+      </div>
+
+      {/* NUEVO: Tarjeta de Análisis de Patrones */}
+      <PatronBienestarCard registros={ultimos7Dias} />
+
       {/* Gráfico de Evolución Temporal */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <h3 className="text-lg font-bold text-slate-800 mb-6">Evolución Temporal</h3>
         <div className="h-[300px] w-full">
           {historialGrafico.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              {/* Le inyectamos historialGrafico al LineChart */}
               <LineChart data={historialGrafico} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="fecha" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
@@ -109,7 +144,8 @@ export default function Dashboard() {
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '13px', paddingTop: '20px' }} />
-                <Line type="monotone" name="Estrés (1-10)" dataKey="estres" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                {/* Se añadió nivel de concentración al gráfico */}
+                <Line type="monotone" name="Estrés (1-10)" dataKey="nivel_estres" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                 <Line type="monotone" name="Estudio (hrs)" dataKey="horas_estudio" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                 <Line type="monotone" name="Sueño (hrs)" dataKey="horas_sueno" stroke="#6366f1" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
               </LineChart>
@@ -122,9 +158,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ========================================= */}
-      {/* SECCIÓN DEL CHATBOT DE INTELIGENCIA ARTIFICIAL */}
-      {/* ========================================= */}
+      {/* CHATBOT */}
       <div className="mt-8">
         <ChatbotBienestar />
       </div>

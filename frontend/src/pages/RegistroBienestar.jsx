@@ -1,274 +1,251 @@
 import { useState } from 'react';
-import { 
-  HeartPulse, Smile, Moon, Activity, 
-  FileText, CheckCircle2, X, Save, Loader2, BookOpen 
-} from 'lucide-react';
-import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { Activity, Brain, BookOpen, Send, AlertCircle, HeartPulse, Droplet, Utensils } from 'lucide-react';
+import api from '../api/axios'; // o '../services/api' según tu estructura
 
 export default function RegistroBienestar() {
+  const navigate = useNavigate();
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
-    estadoAnimo: 'Bien',
-    nivelEstres: '5',
-    horasSueno: '',
-    horasEstudio: '', // <-- NUEVO ESTADO
-    actividadFisica: 'Ninguna',
-    notas: ''
+    horasSueno: '', comidasRealizadas: 3, vasosAgua: 0, actividadFisica: 'Ninguna', minutosActividadFisica: 0, nivelEnergia: 5,
+    estadoAnimo: 'Bien', nivelAnimo: 5, nivelEstres: 5, emocionesPredominantes: '', notas: '',
+    horasEstudio: '', nivelConcentracion: 5, rendimientoPercibido: 5, pausasEstudio: false,
   });
 
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleReviewSubmit = (e) => {
-    e.preventDefault();
-    setShowConfirmModal(true);
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value });
   };
 
-  const handleFinalSubmit = async () => {
-    setIsSubmitting(true);
-    
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (formData.horasSueno < 0 || formData.horasEstudio < 0) return setError('Las horas no pueden ser números negativos.');
+    if (formData.notas.length > 300) return setError('El comentario no puede exceder los 300 caracteres.');
+
     try {
-      const token = localStorage.getItem('access_token');
-      
+      setLoading(true);
       const payload = {
-        estadoAnimo: formData.estadoAnimo,
+        ...formData,
+        horasSueno: parseFloat(formData.horasSueno) || 0,
+        horasEstudio: parseFloat(formData.horasEstudio) || 0,
+        comidasRealizadas: parseInt(formData.comidasRealizadas),
+        vasosAgua: parseInt(formData.vasosAgua),
+        minutosActividadFisica: parseInt(formData.minutosActividadFisica),
+        nivelEnergia: parseInt(formData.nivelEnergia),
+        nivelAnimo: parseInt(formData.nivelAnimo),
         nivelEstres: parseInt(formData.nivelEstres),
-        horasSueno: parseFloat(formData.horasSueno),
-        horasEstudio: parseFloat(formData.horasEstudio) || 0, // <-- NUEVO DATO EN PAYLOAD
-        actividadFisica: formData.actividadFisica,
-        notas: formData.notas
+        nivelConcentracion: parseInt(formData.nivelConcentracion),
+        rendimientoPercibido: parseInt(formData.rendimientoPercibido)
       };
 
-      await axios.post('http://localhost:8000/bienestar/registro', payload, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      setShowConfirmModal(false);
-      setShowSuccess(true);
-      
-      setFormData({
-        estadoAnimo: 'Bien',
-        nivelEstres: '5',
-        horasSueno: '',
-        horasEstudio: '', // <-- RESETEO DEL NUEVO CAMPO
-        actividadFisica: 'Ninguna',
-        notas: ''
-      });
-
-      setTimeout(() => setShowSuccess(false), 3000);
-      
+      await api.post('/bienestar/registrar', payload);
+      navigate('/bienestar/dashboard');
     } catch (error) {
-      console.error("Error al guardar el registro:", error);
-      
-      // Capturamos el error real del backend para saber qué falla
-      const mensajeReal = error.response?.data?.detail || error.response?.data?.message || error.message;
-      alert(`Detalle del error: ${typeof mensajeReal === 'object' ? JSON.stringify(mensajeReal) : mensajeReal}`);
-      
+      console.error(error);
+      setError(error.response?.data?.detail || 'Error al guardar el registro. Inténtalo nuevamente.');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
+  // Clases reutilizables para inputs elegantes
+  const inputClases = "w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all shadow-sm";
+  const labelClases = "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1";
+  const sliderClases = "w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600 mt-2";
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <div className="p-3 bg-rose-100 text-rose-600 rounded-lg">
-          <HeartPulse className="w-6 h-6" />
+    <div className="max-w-4xl mx-auto space-y-8 pb-12">
+      
+      {/* Encabezado Elegante */}
+      <div className="text-center space-y-2 mt-4">
+        <div className="inline-flex items-center justify-center p-3 bg-blue-50 text-blue-600 rounded-2xl mb-2">
+          <HeartPulse className="w-8 h-8" />
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Nuevo Registro de Bienestar</h1>
-          <p className="text-sm text-slate-500">Registra tus métricas diarias de salud emocional y física</p>
-        </div>
+        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Tu Bienestar Diario</h1>
+        <p className="text-slate-500 max-w-xl mx-auto">
+          Tómate un momento para reflexionar. Tus registros nos permiten personalizar tu orientación transdisciplinaria.
+        </p>
       </div>
 
-      {showSuccess && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 p-4 rounded-xl flex items-center gap-3 animate-fade-in-down">
-          <CheckCircle2 className="w-6 h-6" />
-          <div>
-            <p className="font-bold">¡Registro guardado con éxito!</p>
-            <p className="text-sm">Tus métricas de bienestar han sido guardadas en la base de datos.</p>
-          </div>
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-2xl flex items-center gap-3 shadow-sm mx-auto max-w-2xl">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <p className="text-sm font-medium">{error}</p>
         </div>
       )}
 
-      <form onSubmit={handleReviewSubmit} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-              <Smile className="w-4 h-4 text-sky-500" /> Estado de Ánimo
-            </label>
-            <select 
-              value={formData.estadoAnimo}
-              onChange={(e) => setFormData({...formData, estadoAnimo: e.target.value})}
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none text-slate-700"
-            >
-              <option value="Excelente">Excelente 😄</option>
-              <option value="Bien">Bien 🙂</option>
-              <option value="Regular">Regular 😐</option>
-              <option value="Mal">Mal 😔</option>
-              <option value="Muy Mal">Muy Mal 😫</option>
-            </select>
+      <form onSubmit={handleSubmit} className="space-y-8">
+        
+        {/* SECCIÓN A: FÍSICO Y NUTRICIONAL */}
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div>
+          
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl"><Activity className="w-6 h-6" /></div>
+              <h3 className="text-xl font-bold text-slate-800">Cuerpo y Energía</h3>
+            </div>
+            <div className="flex gap-2">
+              <span className="bg-blue-50 text-blue-700 text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wide">Físico</span>
+              <span className="bg-emerald-50 text-emerald-700 text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wide">Nutrición</span>
+            </div>
           </div>
 
-          <div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-              <Moon className="w-4 h-4 text-indigo-500" /> Horas de Sueño
-            </label>
-            <input 
-              type="number" min="0" max="24" step="0.5" required
-              placeholder="Ej. 7.5"
-              value={formData.horasSueno}
-              onChange={(e) => setFormData({...formData, horasSueno: e.target.value})}
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none text-slate-700"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-            <Activity className="w-4 h-4 text-amber-500" /> Nivel de Estrés (1 al 10)
-          </label>
-          <div className="flex items-center gap-4">
-            <input 
-              type="range" min="1" max="10" 
-              value={formData.nivelEstres}
-              onChange={(e) => setFormData({...formData, nivelEstres: e.target.value})}
-              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-rose-500"
-            />
-            <span className="font-bold text-xl text-rose-600 w-8 text-center">{formData.nivelEstres}</span>
-          </div>
-          <div className="flex justify-between text-xs text-slate-400 mt-1">
-            <span>1 - Muy Relajado</span>
-            <span>10 - Muy Estresado</span>
-          </div>
-        </div>
-
-        {/* Agrupamos Actividad Física y Horas de Estudio en 2 columnas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-              <HeartPulse className="w-4 h-4 text-emerald-500" /> Actividad Física
-            </label>
-            <select 
-              value={formData.actividadFisica}
-              onChange={(e) => setFormData({...formData, actividadFisica: e.target.value})}
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none text-slate-700"
-            >
-              <option value="Ninguna">Ninguna</option>
-              <option value="Ligera">Ligera (Caminar, estiramientos)</option>
-              <option value="Moderada">Moderada (Trote, bicicleta, gimnasio suave)</option>
-              <option value="Intensa">Intensa (Correr, entrenamiento pesado, deportes)</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-              <BookOpen className="w-4 h-4 text-violet-500" /> Horas de Estudio {/* <-- NUEVO INPUT VISUAL */}
-            </label>
-            <input 
-              type="number" min="0" max="24" step="0.5" required
-              placeholder="Ej. 4.5"
-              value={formData.horasEstudio}
-              onChange={(e) => setFormData({...formData, horasEstudio: e.target.value})}
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none text-slate-700"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div>
+              <label className={labelClases}>Horas de Sueño</label>
+              <input type="number" step="0.1" name="horasSueno" required value={formData.horasSueno} onChange={handleChange} className={inputClases} placeholder="Ej. 7.5" min="0" />
+            </div>
+            <div className="col-span-1 lg:col-span-2">
+              <label className={labelClases}>Nivel de Energía</label>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 shadow-sm">
+                <input type="range" name="nivelEnergia" min="1" max="10" value={formData.nivelEnergia} onChange={handleChange} className={sliderClases} />
+                <div className="flex justify-between text-xs text-slate-400 font-medium mt-2">
+                  <span>Agotado (1)</span>
+                  <span className="text-blue-600 font-bold text-sm">{formData.nivelEnergia}/10</span>
+                  <span>Radiante (10)</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label className={labelClases}>Comidas Hoy</label>
+              <div className="relative">
+                <Utensils className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" />
+                <input type="number" name="comidasRealizadas" required value={formData.comidasRealizadas} onChange={handleChange} className={`${inputClases} pl-10`} min="0" max="10" />
+              </div>
+            </div>
+            <div>
+              <label className={labelClases}>Vasos de Agua</label>
+              <div className="relative">
+                <Droplet className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" />
+                <input type="number" name="vasosAgua" required value={formData.vasosAgua} onChange={handleChange} className={`${inputClases} pl-10`} min="0" />
+              </div>
+            </div>
+            <div>
+              <label className={labelClases}>Actividad Física</label>
+              <select name="actividadFisica" value={formData.actividadFisica} onChange={handleChange} className={inputClases}>
+                <option value="Ninguna">Ninguna</option>
+                <option value="Ligera">Ligera (Caminar, estirar)</option>
+                <option value="Moderada">Moderada (Trotar, gym)</option>
+                <option value="Intensa">Intensa (Deporte)</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div>
-          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-            <FileText className="w-4 h-4 text-slate-400" /> Notas o Pensamientos (Opcional)
-          </label>
-          <textarea 
-            rows="3"
-            placeholder="¿Cómo te sentiste hoy? ¿Algún evento importante?"
-            value={formData.notas}
-            onChange={(e) => setFormData({...formData, notas: e.target.value})}
-            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none text-slate-700 resize-none"
-          ></textarea>
+        {/* SECCIÓN B: EMOCIONAL */}
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1.5 h-full bg-purple-500"></div>
+          
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl"><Brain className="w-6 h-6" /></div>
+              <h3 className="text-xl font-bold text-slate-800">Mente y Emociones</h3>
+            </div>
+            <span className="bg-purple-50 text-purple-700 text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wide">Psicología</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className={labelClases}>Estado General</label>
+              <select name="estadoAnimo" value={formData.estadoAnimo} onChange={handleChange} className={inputClases}>
+                <option value="Muy Bien">Muy Bien 😄</option>
+                <option value="Bien">Bien 🙂</option>
+                <option value="Regular">Regular 😐</option>
+                <option value="Mal">Mal 😔</option>
+                <option value="Muy Mal">Muy Mal 😫</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelClases}>Emociones Predominantes</label>
+              <input type="text" name="emocionesPredominantes" value={formData.emocionesPredominantes} onChange={handleChange} className={inputClases} placeholder="Ej. Calma, ansiedad, frustración..." />
+            </div>
+            <div>
+              <label className={labelClases}>Nivel de Ánimo</label>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 shadow-sm">
+                <input type="range" name="nivelAnimo" min="1" max="10" value={formData.nivelAnimo} onChange={handleChange} className={`${sliderClases} accent-purple-500`} />
+                <div className="text-center text-sm font-bold text-purple-600 mt-2">{formData.nivelAnimo} / 10</div>
+              </div>
+            </div>
+            <div>
+              <label className={labelClases}>Nivel de Estrés</label>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 shadow-sm">
+                <input type="range" name="nivelEstres" min="1" max="10" value={formData.nivelEstres} onChange={handleChange} className={`${sliderClases} accent-orange-500`} />
+                <div className="text-center text-sm font-bold text-orange-600 mt-2">{formData.nivelEstres} / 10</div>
+              </div>
+            </div>
+            <div className="md:col-span-2">
+              <label className={labelClases}>Diario Breve (Opcional)</label>
+              <textarea name="notas" value={formData.notas} onChange={handleChange} className={`${inputClases} resize-none`} rows="2" placeholder="¿Hay algo en tu mente que quieras registrar hoy?"></textarea>
+            </div>
+          </div>
         </div>
 
-        <div className="pt-4 border-t border-slate-100">
+        {/* SECCIÓN C: ACADÉMICO */}
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-500"></div>
+          
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-orange-50 text-orange-600 rounded-xl"><BookOpen className="w-6 h-6" /></div>
+              <h3 className="text-xl font-bold text-slate-800">Estudio y Rendimiento</h3>
+            </div>
+            <span className="bg-orange-50 text-orange-700 text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wide">C. de la Educación</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className={labelClases}>Horas de Estudio Extra</label>
+              <input type="number" step="0.1" name="horasEstudio" required value={formData.horasEstudio} onChange={handleChange} className={inputClases} placeholder="Ej. 4.5" min="0" />
+            </div>
+            <div className="flex flex-col justify-center pt-6">
+              <label className="flex items-center gap-4 cursor-pointer p-4 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div className="relative flex items-center">
+                  <input type="checkbox" name="pausasEstudio" checked={formData.pausasEstudio} onChange={handleChange} className="peer w-6 h-6 cursor-pointer appearance-none rounded-md border-2 border-slate-300 checked:bg-orange-500 checked:border-orange-500 transition-all" />
+                  <svg className="absolute w-4 h-4 text-white left-1 pointer-events-none opacity-0 peer-checked:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <span className="text-sm font-semibold text-slate-700">Realicé pausas programadas (Ej. Pomodoro)</span>
+              </label>
+            </div>
+            <div>
+              <label className={labelClases}>Nivel de Concentración</label>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 shadow-sm">
+                <input type="range" name="nivelConcentracion" min="1" max="10" value={formData.nivelConcentracion} onChange={handleChange} className={`${sliderClases} accent-orange-500`} />
+                <div className="text-center text-sm font-bold text-orange-600 mt-2">{formData.nivelConcentracion} / 10</div>
+              </div>
+            </div>
+            <div>
+              <label className={labelClases}>Rendimiento Percibido</label>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 shadow-sm">
+                <input type="range" name="rendimientoPercibido" min="1" max="10" value={formData.rendimientoPercibido} onChange={handleChange} className={`${sliderClases} accent-emerald-500`} />
+                <div className="text-center text-sm font-bold text-emerald-600 mt-2">{formData.rendimientoPercibido} / 10</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Botón de Enviar */}
+        <div className="pt-4">
           <button 
-            type="submit"
-            className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition-colors flex justify-center items-center gap-2 shadow-sm"
+            type="submit" 
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-4 rounded-2xl hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:-translate-y-1 shadow-lg disabled:opacity-70 disabled:hover:translate-y-0"
           >
-            <CheckCircle2 className="w-5 h-5" /> Revisar y Continuar
+            {loading ? (
+              <span className="animate-pulse">Guardando análisis integral...</span>
+            ) : (
+              <>
+                <Send className="w-5 h-5" />
+                <span>Guardar Registro de Bienestar</span>
+              </>
+            )}
           </button>
         </div>
       </form>
-
-      {/* Modal de Confirmación */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in-up">
-            <div className="bg-rose-50 p-6 text-center border-b border-rose-100 relative">
-              <button 
-                onClick={() => setShowConfirmModal(false)}
-                className="absolute right-4 top-4 text-rose-400 hover:text-rose-600 bg-white rounded-full p-1 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              <div className="mx-auto w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-3">
-                <FileText className="w-6 h-6" />
-              </div>
-              <h2 className="text-xl font-bold text-slate-800">Resumen de tu día</h2>
-              <p className="text-sm text-slate-500 mt-1">Verifica que tus datos sean correctos antes de guardarlos.</p>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                <span className="text-slate-500 text-sm font-medium">Estado de Ánimo:</span>
-                <span className="font-bold text-slate-800">{formData.estadoAnimo}</span>
-              </div>
-              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                <span className="text-slate-500 text-sm font-medium">Horas de Sueño:</span>
-                <span className="font-bold text-slate-800">{formData.horasSueno} h</span>
-              </div>
-              {/* <-- NUEVA LÍNEA EN EL MODAL PARA HORAS DE ESTUDIO --> */}
-              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                <span className="text-slate-500 text-sm font-medium">Horas de Estudio:</span>
-                <span className="font-bold text-slate-800">{formData.horasEstudio} h</span>
-              </div>
-              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                <span className="text-slate-500 text-sm font-medium">Nivel de Estrés:</span>
-                <span className="font-bold text-rose-600">{formData.nivelEstres} / 10</span>
-              </div>
-              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                <span className="text-slate-500 text-sm font-medium">Actividad Física:</span>
-                <span className="font-bold text-slate-800">{formData.actividadFisica}</span>
-              </div>
-              {formData.notas && (
-                <div className="pt-1">
-                  <span className="text-slate-500 text-sm font-medium block mb-1">Tus Notas:</span>
-                  <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg italic">"{formData.notas}"</p>
-                </div>
-              )}
-            </div>
-
-            <div className="p-6 bg-slate-50 flex gap-3 border-t border-slate-100">
-              <button 
-                onClick={() => setShowConfirmModal(false)}
-                disabled={isSubmitting}
-                className="flex-1 py-2.5 px-4 text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 font-semibold rounded-xl transition-colors"
-              >
-                Volver a editar
-              </button>
-              <button 
-                onClick={handleFinalSubmit}
-                disabled={isSubmitting}
-                className="flex-1 py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
-              >
-                {isSubmitting ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Guardando...</>
-                ) : (
-                  <><Save className="w-4 h-4" /> Confirmar</>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
