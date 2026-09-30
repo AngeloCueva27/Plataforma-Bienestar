@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, PlusCircle, History, Lightbulb, Target, 
   Users, User, HeartPulse, ShieldCheck, GraduationCap, KeyRound,
-  ClipboardCheck // <-- Importamos el nuevo ícono
+  ClipboardCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -12,28 +12,39 @@ export default function Sidebar() {
   // Extraemos el rol. Si no hay, asumimos estudiante
   const userRole = user?.rol || 'estudiante';
 
-  // Definimos a qué rol le pertenece cada ruta usando la propiedad "role"
+  // Usamos un arreglo (Array) en "roles" para permitir que múltiples tipos de especialistas vean su panel
   const navItems = [
     // --- RUTAS DE ESTUDIANTE ---
-    { path: '/', label: 'Dashboard', icon: LayoutDashboard, role: 'estudiante' },
-    { path: '/bienestar/registrar', label: 'Nuevo Registro', icon: PlusCircle, role: 'estudiante' },
-    { path: '/bienestar/historial', label: 'Historial', icon: History, role: 'estudiante' },
-    { path: '/bienestar/recomendaciones', label: 'Recomendaciones', icon: Lightbulb, role: 'estudiante' },
-    { path: '/bienestar/metas', label: 'Metas', icon: Target, role: 'estudiante' },
-    { path: '/perfil', label: 'Mi Perfil', icon: User, role: 'estudiante' },
+    { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['estudiante'] },
+    { path: '/bienestar/registrar', label: 'Nuevo Registro', icon: PlusCircle, roles: ['estudiante'] },
+    { path: '/bienestar/historial', label: 'Historial', icon: History, roles: ['estudiante'] },
+    { path: '/bienestar/recomendaciones', label: 'Recomendaciones', icon: Lightbulb, roles: ['estudiante'] },
+    { path: '/bienestar/metas', label: 'Metas', icon: Target, roles: ['estudiante'] },
+    { path: '/perfil', label: 'Mi Perfil', icon: User, roles: ['estudiante', 'psicologo', 'nutricionista', 'educador', 'especialista'] },
     
-    // --- RUTAS DE ESPECIALISTA (Visible temporalmente para el estudiante para poder probarlo) ---
-    { path: '/bienestar/especialistas', label: 'Panel Especialista', icon: ClipboardCheck, role: 'estudiante' },
+    // --- RUTAS DE ESPECIALISTAS (Oculto para estudiantes) ---
+    { 
+      path: '/bienestar/especialistas', 
+      label: 'Panel Especialista', 
+      icon: ClipboardCheck, 
+      roles: ['especialista', 'psicologo', 'nutricionista', 'educador'] 
+    },
 
-    // --- RUTAS DE ADMINISTRADOR ---
-    { path: '/admin/usuarios', label: 'Gestión de Usuarios', icon: Users, role: 'admin' },
-    { path: '/admin/estudiantes', label: 'Perfiles Estudiantiles', icon: GraduationCap, role: 'admin' },
-    { path: '/admin/auditoria', label: 'Auditoría', icon: ShieldCheck, role: 'admin' },
-    { path: '/admin/restablecer', label: 'Restablecer Contraseñas', icon: KeyRound, role: 'admin' },
+    // --- RUTAS DE ADMINISTRADOR Y ESPECIALISTAS ---
+    { path: '/admin/usuarios', label: 'Gestión de Usuarios', icon: Users, roles: ['admin'] },
+    { 
+      path: '/admin/estudiantes', 
+      label: 'Perfiles Estudiantiles', 
+      icon: GraduationCap, 
+      // 👇 AQUÍ ESTÁ EL CAMBIO: Se agregaron los roles de los especialistas
+      roles: ['admin', 'psicologo', 'nutricionista', 'educador', 'especialista'] 
+    },
+    { path: '/admin/auditoria', label: 'Auditoría', icon: ShieldCheck, roles: ['admin'] },
+    { path: '/admin/restablecer', label: 'Restablecer Contraseñas', icon: KeyRound, roles: ['admin'] },
   ];
 
-  // El filtro mágico: Solo dejamos pasar los items que coincidan con el rol del usuario actual
-  const filteredNavItems = navItems.filter((item) => item.role === userRole);
+  // Filtramos: Solo mostramos los items donde el arreglo 'roles' incluya el rol del usuario actual
+  const filteredNavItems = navItems.filter((item) => item.roles.includes(userRole));
 
   return (
     <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col h-full">

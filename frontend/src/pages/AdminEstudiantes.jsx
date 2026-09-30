@@ -15,8 +15,9 @@ export default function AdminEstudiantes() {
           headers: { Authorization: `Bearer ${token}` }
         });
         
-        // El filtro mágico: Nos quedamos SOLO con los que NO son administradores
-        const soloEstudiantes = response.data.filter(u => !u.es_admin);
+        // EL NUEVO FILTRO MÁGICO: Nos quedamos ESTRICTAMENTE con los que tienen rol de estudiante
+        const soloEstudiantes = response.data.filter(u => u.rol === 'estudiante');
+        
         setEstudiantes(soloEstudiantes);
       } catch (err) {
         console.error("Error al cargar estudiantes:", err);

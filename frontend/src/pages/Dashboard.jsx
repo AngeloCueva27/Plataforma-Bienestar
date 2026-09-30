@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Moon, Brain, BookOpen, Activity, Droplet, Utensils, Target } from 'lucide-react';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import ChatbotBienestar from '../components/ChatbotBienestar';
 import PatronBienestarCard from '../components/bienestar/PatronBienestarCard';
 import AlertasPreventivas from '../components/bienestar/AlertasPreventivas';
 
 export default function Dashboard() {
+  const { user } = useAuth(); // 1. Extraemos el usuario autenticado
+  
   const [estadisticas, setEstadisticas] = useState({
     promedio_sueno: 0,
     promedio_estres: 0,
@@ -18,6 +22,12 @@ export default function Dashboard() {
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
+    // Si no es estudiante, evitamos hacer peticiones a la API y cortamos la carga
+    if (user?.rol !== 'estudiante' && user?.rol !== 'user') {
+      setCargando(false);
+      return;
+    }
+
     const cargarDatos = async () => {
       try {
         const resEstadisticas = await api.get('/bienestar/estadisticas');
@@ -37,7 +47,16 @@ export default function Dashboard() {
       }
     };
     cargarDatos();
-  }, []);
+  }, [user]);
+
+  // 2. REDIRECCIONES DE SEGURIDAD (Siempre después de los hooks)
+  if (user?.rol === 'admin' || user?.es_admin) {
+    return <Navigate to="/admin/usuarios" replace />;
+  }
+
+  if (['psicologo', 'nutricionista', 'educador', 'especialista'].includes(user?.rol)) {
+    return <Navigate to="/bienestar/especialistas" replace />;
+  }
 
   if (cargando) {
     return (
@@ -102,7 +121,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* NUEVO: Fila Transdisciplinaria */}
+      {/* Fila Transdisciplinaria */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
          <div className="bg-green-50/50 p-4 rounded-xl border border-green-100 flex justify-between items-center">
             <div>
@@ -127,7 +146,7 @@ export default function Dashboard() {
          </div>
       </div>
 
-      {/* NUEVO: Tarjeta de Análisis de Patrones */}
+      {/* Tarjeta de Análisis de Patrones */}
       <PatronBienestarCard registros={ultimos7Dias} />
 
       {/* Gráfico de Evolución Temporal */}
@@ -144,7 +163,6 @@ export default function Dashboard() {
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '13px', paddingTop: '20px' }} />
-                {/* Se añadió nivel de concentración al gráfico */}
                 <Line type="monotone" name="Estrés (1-10)" dataKey="nivel_estres" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                 <Line type="monotone" name="Estudio (hrs)" dataKey="horas_estudio" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                 <Line type="monotone" name="Sueño (hrs)" dataKey="horas_sueno" stroke="#6366f1" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />

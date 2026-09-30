@@ -1,22 +1,46 @@
 import { useState, useEffect } from 'react';
 import { ShieldCheck, AlertCircle, CheckCircle, XCircle, UserX } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
 export default function PanelEspecialista() {
+  const { user } = useAuth(); // Obtenemos el usuario y su rol actual
   const [casos, setCasos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
   const [observaciones, setObservaciones] = useState({});
 
   useEffect(() => {
-    cargarCasos();
-  }, []);
+    // Evitamos hacer la petición si es un estudiante
+    if (user?.rol !== 'estudiante') {
+      cargarCasos();
+    }
+  }, [user]);
+
+  // BLOQUEO DE SEGURIDAD: Si es estudiante, lo pateamos al Dashboard
+  if (user?.rol === 'estudiante') {
+    return <Navigate to="/" replace />;
+  }
 
   const cargarCasos = async () => {
     try {
       setCargando(true);
       const res = await api.get('/api/especialista/validaciones/casos-pendientes');
-      setCasos(res.data);
+      
+      // FILTRO INTELIGENTE POR ESPECIALIDAD
+      let casosFiltrados = res.data;
+      
+      if (user?.rol === 'psicologo') {
+        casosFiltrados = res.data.filter(c => c.disciplinas?.includes('Psicología'));
+      } else if (user?.rol === 'nutricionista') {
+        casosFiltrados = res.data.filter(c => c.disciplinas?.includes('Nutrición'));
+      } else if (user?.rol === 'educador') {
+        casosFiltrados = res.data.filter(c => c.disciplinas?.includes('Ciencias de la Educación'));
+      }
+      // Si el rol es 'admin' o un 'especialista' general, verá todos los casos
+
+      setCasos(casosFiltrados);
     } catch (error) {
       console.error("Error al cargar casos:", error);
       setMensaje({ tipo: 'error', texto: 'No se pudieron cargar los casos pendientes.' });
@@ -40,11 +64,9 @@ export default function PanelEspecialista() {
 
       await api.post('/api/especialista/validaciones/', payload);
       
-      // Remover el caso de la lista validada
       setCasos(casos.filter(c => c.id_referencia !== caso.id_referencia));
       setMensaje({ tipo: 'exito', texto: 'Validación registrada correctamente.' });
       
-      // Limpiar el campo de texto
       setObservaciones(prev => {
         const newObs = { ...prev };
         delete newObs[caso.id_referencia];
@@ -70,9 +92,9 @@ export default function PanelEspecialista() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <ShieldCheck className="w-7 h-7 text-emerald-400" />
-            Panel de Validación Clínica/Académica
+            Panel de Validación ({user?.rol ? user.rol.toUpperCase() : 'ESPECIALISTA'})
           </h1>
-          <p className="text-slate-300 mt-1 text-sm">Supervisión de orientaciones generadas por IA.</p>
+          <p className="text-slate-300 mt-1 text-sm">Supervisión de orientaciones generadas por IA filtradas por tu área.</p>
         </div>
         <div className="bg-slate-700 px-4 py-2 rounded-lg text-sm font-medium border border-slate-600 flex items-center gap-2">
           <UserX className="w-4 h-4 text-slate-400" />
@@ -92,7 +114,7 @@ export default function PanelEspecialista() {
         <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
           <ShieldCheck className="w-16 h-16 text-slate-200 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-slate-700">Bandeja limpia</h3>
-          <p className="text-slate-500">No hay orientaciones de IA pendientes de validación en este momento.</p>
+          <p className="text-slate-500">No hay orientaciones de tu especialidad pendientes de validación.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -103,16 +125,16 @@ export default function PanelEspecialista() {
               <div className="flex-1 space-y-3">
                 <div className="flex items-center gap-3">
                   <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded-md font-mono text-sm font-bold border border-slate-200">
-                    {caso.codigo_anonimo}
+                    {caso.codigo_anonimo || 'ANON-000'}
                   </span>
                   <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded uppercase tracking-wider">
-                    {caso.categoria}
+                    {caso.categoria || caso.tipo}
                   </span>
                 </div>
                 
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-slate-700 text-sm leading-relaxed">
                   <p className="font-semibold text-slate-500 text-xs mb-2 uppercase tracking-wider">Consejo emitido por IA:</p>
-                  "{caso.contenido_ia}"
+                  "{caso.contenido_ia || caso.descripcion}"
                 </div>
 
                 <div className="flex flex-wrap gap-2">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Shield, User, Activity, MoreVertical, Plus, X, Loader2 } from 'lucide-react';
+import { Users, Shield, User, Activity, MoreVertical, Plus, X, Loader2, Stethoscope, Apple, BookOpen } from 'lucide-react';
 import axios from 'axios';
 
 export default function AdminUsuarios() {
@@ -38,19 +38,18 @@ export default function AdminUsuarios() {
     fetchUsuarios();
   }, []);
 
-  // Manejador para crear un nuevo usuario
   const handleCreateUser = async (e) => {
     e.preventDefault();
     setModalError('');
     setIsSubmitting(true);
 
     try {
-      // Usamos el endpoint de registro que ya tienes en tu backend
+      // Usamos el endpoint de registro
       await axios.post('http://localhost:8000/auth/register', {
         nombre: formData.nombre,
         email: formData.email,
         password: formData.password,
-        ciclo: parseInt(formData.ciclo),
+        ciclo: parseInt(formData.ciclo) || 1, // Asegura que sea un número válido
         rol: formData.rol
       });
       
@@ -60,9 +59,59 @@ export default function AdminUsuarios() {
       fetchUsuarios();
       
     } catch (err) {
-      setModalError(err.response?.data?.detail || 'Error al crear el usuario. Revisa los datos.');
+      // Manejo seguro de errores para evitar que React falle (Pantalla en blanco) al recibir Arrays u Objetos
+      let errorMsg = 'Error al crear el usuario. Revisa los datos.';
+      const detail = err.response?.data?.detail;
+
+      if (typeof detail === 'string') {
+        // Si el backend envía un mensaje de texto simple (Ej. "El correo ya existe")
+        errorMsg = detail;
+      } else if (Array.isArray(detail)) {
+        // Si FastAPI envía un error de validación 422 Unprocessable Entity
+        errorMsg = detail[0].msg;
+      }
+
+      setModalError(errorMsg);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Función auxiliar para renderizar la etiqueta del rol con su icono y color correcto
+  const renderRolBadge = (user) => {
+    if (user.es_admin || user.rol === 'admin') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+          <Shield className="w-3 h-3" /> Admin
+        </span>
+      );
+    }
+
+    switch(user.rol) {
+      case 'psicologo':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700">
+            <Stethoscope className="w-3 h-3" /> Psicólogo
+          </span>
+        );
+      case 'nutricionista':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+            <Apple className="w-3 h-3" /> Nutricionista
+          </span>
+        );
+      case 'educador':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+            <BookOpen className="w-3 h-3" /> Educador
+          </span>
+        );
+      default: // estudiante
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+            <User className="w-3 h-3" /> Estudiante
+          </span>
+        );
     }
   };
 
@@ -119,15 +168,7 @@ export default function AdminUsuarios() {
                   <td className="p-4 text-slate-500 text-sm">#{user.id}</td>
                   <td className="p-4 font-medium text-slate-800">{user.email}</td>
                   <td className="p-4">
-                    {user.es_admin ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                        <Shield className="w-3 h-3" /> Admin
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
-                        <User className="w-3 h-3" /> Estudiante
-                      </span>
-                    )}
+                    {renderRolBadge(user)}
                   </td>
                   <td className="p-4">
                     {user.is_active ? (
@@ -216,12 +257,13 @@ export default function AdminUsuarios() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Ciclo</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Ciclo (Solo estudiantes)</label>
                   <input 
-                    type="number" min="1" max="10" required
+                    type="number" min="1" max="10" 
                     value={formData.ciclo}
                     onChange={(e) => setFormData({...formData, ciclo: e.target.value})}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none"
+                    disabled={formData.rol !== 'estudiante'} // Se desactiva si es especialista
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none disabled:opacity-50"
                   />
                 </div>
                 <div>
@@ -229,9 +271,12 @@ export default function AdminUsuarios() {
                   <select 
                     value={formData.rol}
                     onChange={(e) => setFormData({...formData, rol: e.target.value})}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none font-medium"
                   >
                     <option value="estudiante">Estudiante</option>
+                    <option value="psicologo">Psicólogo</option>
+                    <option value="nutricionista">Nutricionista</option>
+                    <option value="educador">Educador</option>
                     <option value="admin">Administrador</option>
                   </select>
                 </div>

@@ -21,6 +21,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 class UsuarioAdminResponse(BaseModel):
     id: int
     email: str
+    rol: str  # <-- CAMBIO 1: Agregamos el rol al esquema
     is_active: bool = True
     es_admin: bool = False
 
@@ -51,7 +52,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         nombre=user.nombre,
         email=user.email,
         hashed_password=hashed_pwd,
-        ciclo=str(user.ciclo),
+        ciclo=user.ciclo, # <-- CORRECCIÓN: Se envía como entero, no como string
         rol=user.rol
     )
     db.add(nuevo_usuario)
@@ -74,7 +75,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     # 2. Crear el token JWT
     rol_usuario = user.rol.value if hasattr(user.rol, 'value') else user.rol
     
-    # AQUÍ ESTÁ EL CAMBIO: Agregamos "nombre" al token
     access_token = create_access_token(data={
         "sub": user.email,
         "rol": rol_usuario,
@@ -98,9 +98,14 @@ def listar_usuarios(
             "es_admin", 
             getattr(u, "is_admin", getattr(u, "is_superuser", u.rol == "admin" if hasattr(u, "rol") else False))
         )
+        
+        # <-- CAMBIO 2: Extraemos el valor del rol de forma segura
+        rol_val = u.rol.value if hasattr(u.rol, 'value') else getattr(u, "rol", "estudiante")
+        
         resultado.append({
             "id": u.id,
             "email": u.email,
+            "rol": rol_val,  # <-- CAMBIO 3: Se lo enviamos a React
             "is_active": getattr(u, "is_active", True),
             "es_admin": es_admin_val
         })
@@ -114,7 +119,6 @@ def reset_password(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # 1. Verificar que quien hace la petición es realmente un administrador
     rol_actual = current_user.rol.value if hasattr(current_user.rol, 'value') else current_user.rol
     if rol_actual != "admin":
         raise HTTPException(
@@ -122,7 +126,6 @@ def reset_password(
             detail="No tienes permisos para realizar esta acción."
         )
         
-    # 2. Buscar al usuario al que le cambiaremos la contraseña
     user_to_update = db.query(User).filter(User.id == req.user_id).first()
     if not user_to_update:
         raise HTTPException(
@@ -130,7 +133,6 @@ def reset_password(
             detail="Usuario no encontrado."
         )
         
-    # 3. Encriptar la nueva contraseña y guardarla
     user_to_update.hashed_password = get_password_hash(req.new_password)
     db.commit()
     
