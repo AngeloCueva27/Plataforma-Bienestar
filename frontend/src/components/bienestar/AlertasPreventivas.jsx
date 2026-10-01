@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
-import { AlertTriangle, Info, X } from 'lucide-react';
+import { AlertTriangle, Info } from 'lucide-react'; // Ya no importamos 'X'
 import api from '../../services/api';
 
 export default function AlertasPreventivas() {
   const [alertas, setAlertas] = useState([]);
 
   useEffect(() => {
-    // Si la bloqueamos permanentemente, ni siquiera consultamos al servidor
-    if (localStorage.getItem('alerta_bloqueada_permanente')) return;
+    // Sin bloqueos, siempre carga la alerta si existe
     cargarAlertas();
   }, []);
 
@@ -24,36 +23,17 @@ export default function AlertasPreventivas() {
     }
   };
 
-  const destruir = (e, id) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    // 1. Destruimos el contenedor HTML de forma invisible y silenciosa
-    const contenedor = document.getElementById('contenedor-alerta-global');
-    if (contenedor) {
-      contenedor.remove();
-    }
-
-    // 2. Bloqueo permanente en la memoria del navegador
-    localStorage.setItem('alerta_bloqueada_permanente', 'true');
-
-    // 3. Intento de borrado en base de datos en segundo plano
-    if (id) {
-      api.delete(`/api/ia/alertas/${id}`).catch(() => {});
-    }
-  };
-
   if (alertas.length === 0) return null;
   const alerta = alertas[0];
 
   return (
-    <div id="contenedor-alerta-global" className="relative p-5 rounded-2xl border flex gap-4 items-start shadow-sm bg-red-50 border-red-200 text-red-900 mb-8">
+    <div className="relative p-5 rounded-2xl border flex gap-4 items-start shadow-sm bg-red-50 border-red-200 text-red-900 mb-8">
       
       <div className="p-2.5 rounded-full bg-red-100 text-red-600 mt-1">
         <AlertTriangle className="w-6 h-6" />
       </div>
       
-      <div className="flex-1 pr-16">
+      <div className="flex-1">
         <h4 className="font-bold text-lg leading-none mb-2">{alerta.titulo || "Alerta Detectada"}</h4>
         <p className="text-sm opacity-90 leading-relaxed">{alerta.descripcion}</p>
         
@@ -70,15 +50,6 @@ export default function AlertasPreventivas() {
           ))}
         </div>
       </div>
-
-      <button 
-        onClick={(e) => destruir(e, alerta.id || alerta.alerta_id)}
-        style={{ zIndex: 99999 }}
-        className="absolute top-4 right-4 p-2 bg-red-200 hover:bg-red-500 text-red-800 hover:text-white rounded-xl transition-all cursor-pointer shadow-sm border border-red-300"
-        title="Descartar permanentemente"
-      >
-        <X className="w-5 h-5 stroke-[3px]" />
-      </button>
       
     </div>
   );

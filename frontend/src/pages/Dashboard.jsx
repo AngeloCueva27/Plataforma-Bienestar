@@ -83,9 +83,6 @@ export default function Dashboard() {
         <p className="text-slate-500">Resumen integral transdisciplinario de tus métricas recientes.</p>
       </div>
 
-      {/* COMPONENTE DE ALERTAS PREVENTIVAS */}
-      <AlertasPreventivas />
-
       {/* Tarjetas de Métricas Originales */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">

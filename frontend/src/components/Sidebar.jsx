@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, PlusCircle, History, Lightbulb, Target, 
   Users, User, HeartPulse, ShieldCheck, GraduationCap, KeyRound,
-  ClipboardCheck
+  ClipboardCheck, Bell
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -21,7 +21,7 @@ export default function Sidebar() {
     { path: '/bienestar/recomendaciones', label: 'Recomendaciones', icon: Lightbulb, roles: ['estudiante'] },
     { path: '/bienestar/metas', label: 'Metas', icon: Target, roles: ['estudiante'] },
     { path: '/perfil', label: 'Mi Perfil', icon: User, roles: ['estudiante', 'psicologo', 'nutricionista', 'educador', 'especialista'] },
-    
+    { path: '/bienestar/alertas', label: 'Mis Alertas', icon: Bell, roles: ['estudiante'] },
     // --- RUTAS DE ESPECIALISTAS (Oculto para estudiantes) ---
     { 
       path: '/bienestar/especialistas', 

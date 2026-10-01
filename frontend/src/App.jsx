@@ -15,6 +15,7 @@ import HistorialBienestar from './pages/HistorialBienestar';
 import Recomendaciones from './pages/Recomendaciones';
 import Metas from './pages/Metas';
 import Perfil from './pages/Perfil';
+import Alertas from './pages/Alertas';
 
 // Páginas Administrador
 import AdminUsuarios from './pages/AdminUsuarios';
@@ -65,7 +66,9 @@ export default function App() {
             <Route path="/perfil" element={<Perfil />} />
 
             {/* Rutas de Especialista (NUEVO) */}
-            <Route path="/bienestar/especialistas" element={<PanelEspecialista />} />
+            <Route path="/bienestar/especialistas" element={<PanelEspecialista />}
+             />
+            <Route path="/bienestar/alertas" element={<Alertas />} /> {/* <-- AGREGA ESTA LÍNEA */}
 
             {/* Rutas de Administrador */}
             <Route path="/admin/usuarios" element={<AdminUsuarios />} />
